@@ -34,10 +34,20 @@ const HomePage = ({ user, transactions, accounts, onNavigate }) => {
         if (tx.type === "Transfer") {
             if (balances.hasOwnProperty(tx.source)) balances[tx.source] -= tx.amount;
             if (balances.hasOwnProperty(tx.destination)) balances[tx.destination] += tx.amount;
-        } else if (tx.type === "Income") {
+        }
+        if (tx.type === "Income") {
             if (balances.hasOwnProperty(tx.destination)) balances[tx.destination] += tx.amount;
-        } else if (tx.type === "Expense") {
+        }
+        if (tx.type === "Expense") {
             if (balances.hasOwnProperty(tx.source)) balances[tx.source] -= tx.amount;
+        }
+        if (tx.splitAmount > 0) {
+            const splitwiseAccount = accounts.find(
+                (a) => a.type === "Splitwise"
+            );
+            if (splitwiseAccount && balances.hasOwnProperty(splitwiseAccount.name)) {
+                balances[splitwiseAccount.name] += tx.splitAmount;
+            }
         }
     });
 
