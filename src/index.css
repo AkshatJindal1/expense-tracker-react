@@ -1,0 +1,379 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    font-family: "Roboto", sans-serif;
+    background-color: #f8f9fa;
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.nav-btn.active {
+    color: #0b57d0;
+}
+
+.fab {
+    background-color: #0b57d0;
+    color: white;
+    border-radius: 1rem;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.fab:active {
+    transform: scale(0.95);
+}
+
+.save-fab,
+.page-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: #1a73e8;
+}
+
+.nav-fab {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.balance-detail-row,
+.summary-detail-row {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.balance-detail-row.expanded,
+.summary-detail-row.expanded {
+    max-height: 500px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+/* Set specific z-index for modals */
+#filter-modal {
+    z-index: 50;
+}
+
+#selection-modal {
+    z-index: 60;
+}
+
+#confirmation-modal {
+    z-index: 70;
+}
+
+#error-snackbar {
+    z-index: 100;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 1.5rem 1.5rem 0 0;
+    padding: 1rem;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-overlay.visible .bottom-sheet {
+    transform: translateY(0);
+}
+
+.selection-input,
+.filter-input,
+.date-time-input {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+input[type="date"]:not(.has-value):before {
+    content: attr(placeholder);
+    color: #5f6368;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+}
+
+.form-row .material-symbols-outlined {
+    color: #5f6368;
+    margin-right: 1rem;
+}
+
+.form-row .form-label {
+    font-weight: 400;
+    color: #3c4043;
+}
+
+.form-row .form-value {
+    margin-left: auto;
+    color: #5f6368;
+    font-weight: 400;
+}
+
+.floating-label-container {
+    position: relative;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding-top: 1.25rem;
+    padding-bottom: 0.5rem;
+    padding-left: 3.25rem;
+}
+
+.floating-label {
+    position: absolute;
+    left: 3.25rem;
+    top: 0.9rem;
+    color: #5f6368;
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.floating-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 1.125rem;
+}
+
+.floating-input:focus+.floating-label,
+.floating-input:not(:placeholder-shown)+.floating-label {
+    top: 0.25rem;
+    font-size: 0.75rem;
+    color: #0b57d0;
+}
+
+.icon-prefix {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #5f6368;
+}
+
+.summary-tab,
+.tx-type-tab {
+    border-bottom: 2px solid transparent;
+}
+
+.summary-tab.active,
+.tx-type-tab.active {
+    border-color: #0b57d0;
+    color: #0b57d0;
+}
+
+.transaction-card,
+.account-card,
+.category-card {
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.m3-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 32px;
+}
+
+.m3-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.m3-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e0e0e0;
+    transition: 0.4s;
+    border-radius: 34px;
+}
+
+.m3-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+input:checked+.m3-slider {
+    background-color: #0b57d0;
+}
+
+input:checked+.m3-slider:before {
+    transform: translateX(20px);
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid #747775;
+    color: #444746;
+    background-color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.filter-chip.selected {
+    background-color: #d3e4ff;
+    border-color: transparent;
+    color: #001c38;
+}
+
+.filter-chip .material-symbols-outlined {
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.selection-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.selection-card:hover {
+    background-color: #f5f5f5;
+}
+
+.selection-card.selected {
+    background-color: #e3f2fd;
+    border-color: #0b57d0;
+}
+
+.selection-card-main {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #3c4043;
+}
+
+.selection-card.selected .selection-card-main {
+    color: #0b57d0;
+}
+
+.selection-card-sub {
+    font-size: 0.875rem;
+    color: #5f6368;
+}
+
+/* New styles for the error snackbar */
+#error-snackbar.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* Styles for multi-select */
+.selecting .transaction-card,
+.selecting .account-card,
+.selecting .category-card {
+    cursor: pointer;
+}
+
+.transaction-card.selected,
+.account-card.selected,
+.category-card.selected {
+    background-color: #e3f2fd;
+    border-color: #0b57d0;
+}
+
+.selection-indicator {
+    display: none;
+    margin-right: 12px;
+    color: #0b57d0;
+    font-size: 24px;
+}
+
+.selecting .selection-indicator {
+    display: block;
+}
+
+/* New styles for sticky headers */
+.sticky-top-container {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa;
+    /* Match body background */
+    padding-bottom: 1rem;
+}
