@@ -197,6 +197,7 @@ function App() {
         return (
           <AnalyticsPage
             transactions={transactions}
+            onBack={() => navigateTo('home')}
           />
         );
       case 'more':
