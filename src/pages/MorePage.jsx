@@ -6,14 +6,14 @@ const MorePage = ({ onNavigate, onSignOut }) => {
       <h1 className="text-2xl font-medium text-gray-800 mb-4">More Options</h1>
       <div className="space-y-3">
         <button
-          onClick={() => onNavigate('accounts')} // Will be created later
+          onClick={() => onNavigate('accounts')}
           className="w-full text-left bg-white p-4 rounded-lg shadow-sm flex items-center"
         >
           <span className="material-symbols-outlined mr-3">account_balance_wallet</span>
           Manage Accounts
         </button>
         <button
-          onClick={() => onNavigate('categories')} // Will be created later
+          onClick={() => onNavigate('categories')}
           className="w-full text-left bg-white p-4 rounded-lg shadow-sm flex items-center"
         >
           <span className="material-symbols-outlined mr-3">category</span>

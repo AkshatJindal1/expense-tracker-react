@@ -1,30 +1,31 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import AccountCard from '../components/AccountCard';
+import CategoryCard from '../components/ CategoryCard';
 
-export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) => {
+const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const groupedAccounts = useMemo(() => {
-    return accounts.reduce((acc, account) => {
-      const { type } = account;
-      if (!acc[type]) acc[type] = [];
-      acc[type].push(account);
+  const groupedCategories = useMemo(() => {
+    return categories.reduce((acc, cat) => {
+      const { transactionType } = cat;
+      if (!acc[transactionType]) acc[transactionType] = [];
+      acc[transactionType].push(cat);
       return acc;
     }, {});
-  }, [accounts]);
-
-  const handleCardClick = (account) => {
+  }, [categories]);
+  
+  // ... (selection logic similar to AccountsPage) ...
+  const handleCardClick = (category) => {
     if (isSelecting) {
       const newSelectedIds = new Set(selectedIds);
-      if (newSelectedIds.has(account.id)) {
-        newSelectedIds.delete(account.id);
+      if (newSelectedIds.has(category.id)) {
+        newSelectedIds.delete(category.id);
       } else {
-        newSelectedIds.add(account.id);
+        newSelectedIds.add(category.id);
       }
       setSelectedIds(newSelectedIds);
     } else {
-      onEdit(account);
+      onEdit(category);
     }
   };
   
@@ -42,7 +43,7 @@ export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) =
 
   return (
     <div className="page active">
-      <div className="sticky top-0 z-10 bg-gray-50 pt-4 px-4 pb-4">
+       <div className="sticky top-0 z-10 bg-gray-50 pt-4 px-4 pb-4">
         <div className="flex items-center justify-between mb-4">
           {isSelecting ? (
             <>
@@ -54,28 +55,26 @@ export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) =
             <>
               <div className="flex items-center">
                 <button onClick={onBack} className="material-symbols-outlined mr-2">arrow_back</button>
-                <h1 className="text-2xl font-medium text-gray-800">Accounts</h1>
+                <h1 className="text-2xl font-medium text-gray-800">Categories</h1>
               </div>
               <button onClick={toggleSelectionMode} className="p-2 material-symbols-outlined">select</button>
             </>
           )}
         </div>
       </div>
-
-      <div className="space-y-4 px-4 pb-24">
-        {Object.entries(groupedAccounts).sort(([typeA], [typeB]) => typeA.localeCompare(typeB)).map(([type, accountsInGroup]) => (
+      <div className="space-y-4 px-4">
+        {Object.entries(groupedCategories).map(([type, cats]) => (
           <div key={type}>
             <h3 className="text-sm font-medium text-gray-500 mt-4 mb-2">{type}</h3>
             <div className="space-y-3">
-              {accountsInGroup.map(acc => (
-                <AccountCard key={acc.id} account={acc} isSelecting={isSelecting} isSelected={selectedIds.has(acc.id)} onClick={handleCardClick} />
+              {cats.map(cat => (
+                 <CategoryCard key={cat.id} category={cat} isSelecting={isSelecting} isSelected={selectedIds.has(cat.id)} onClick={handleCardClick} />
               ))}
             </div>
           </div>
         ))}
       </div>
-      
-      {!isSelecting && (
+       {!isSelecting && (
         <button onClick={onAddNew} className="fab page-fab">
           <span className="material-symbols-outlined">add</span>
         </button>
@@ -84,4 +83,4 @@ export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) =
   );
 };
 
-export default AccountsPage;
+export default CategoriesPage;

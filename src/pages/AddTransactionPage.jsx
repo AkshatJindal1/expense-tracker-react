@@ -4,7 +4,8 @@ import DateTimeInputs from '../components/forms/datetimeInput';
 import FormRow from '../components/forms/formRow';
 import SplitwiseInput from '../components/forms/SplitwiseInput';
 
-export const AddTransactionPage = ({ onBack, onSave, accounts, categories, openSelectionSheet }) => {
+export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, accounts, categories, openSelectionSheet }) => {
+    const isEditing = !!initialData;
     const [txType, setTxType] = useState('Expense');
 
     // Form State
@@ -20,20 +21,48 @@ export const AddTransactionPage = ({ onBack, onSave, accounts, categories, openS
 
     // Set initial date and time on component mount
     useEffect(() => {
-        const now = new Date();
-        const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        setDate(localDate.toISOString().slice(0, 10));
-        setTime(localDate.toISOString().slice(11, 16));
-    }, []);
+        if (initialData) {
+            console.log(initialData)
+            setTxType(initialData.type || 'Expense')
+            setAmount(initialData.amount || '')
+            setCategory(initialData.category || '')
+            setSource(initialData.source || '')
+            setDestination(initialData.destination || '')
+            setNotes(initialData.notes || '')
+            const d = initialData.date?.toDate ? initialData.date.toDate() : new Date();
+            setDate(d.toISOString().split('T')[0]);
+            setTime(d.toTimeString().slice(0, 5));
+            setIsSplit(initialData.splitAmount > 0);
+            setSplitAmount(initialData.splitAmount > 0 ? initialData.splitAmount : '');
+        } else {
+            const now = new Date();
+            setTxType('Expense');
+            setAmount('');
+            setCategory('');
+            setSource('');
+            setDestination('');
+            setNotes('');
+            setDate(now.toISOString().split('T')[0]);
+            setTime(now.toTimeString().slice(0, 5));
+            setIsSplit(false);
+            setSplitAmount('');
+        }
+    }, [initialData]);
 
-    // Reset dependent fields when transaction type changes
-    useEffect(() => {
+    const handleTxTypeChange = (newType) => {
+        // Do nothing if the type hasn't changed
+        if (newType === txType) return;
+
+        // Set the new type
+        setTxType(newType);
+
+        // Reset all dependent fields
         setCategory('');
         setSource('');
         setDestination('');
         setIsSplit(false);
         setSplitAmount('');
-    }, [txType]);
+    };
 
     const handleSave = () => {
         // Basic validation
@@ -51,6 +80,7 @@ export const AddTransactionPage = ({ onBack, onSave, accounts, categories, openS
         }
 
         const transactionData = {
+            id: initialData?.id,
             type: txType,
             amount: parseFloat(amount),
             category,
@@ -62,6 +92,10 @@ export const AddTransactionPage = ({ onBack, onSave, accounts, categories, openS
         };
 
         onSave(transactionData);
+    };
+
+    const handleDelete = () => {
+        onDelete(initialData.id);
     };
 
     const handleCategorySelect = () => {
@@ -86,14 +120,12 @@ export const AddTransactionPage = ({ onBack, onSave, accounts, categories, openS
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center">
-                    <button onClick={onBack} className="material-symbols-outlined mr-2">
-                        arrow_back
-                    </button>
-                    <h1 className="text-2xl font-medium text-gray-800">
-                        Add Transaction
-                    </h1>
+                    <button onClick={onBack} className="material-symbols-outlined mr-2">arrow_back</button>
+                    <h1 className="text-2xl font-medium text-gray-800">{isEditing ? 'Edit Transaction' : 'Add Transaction'}</h1>
                 </div>
-                {/* Delete button can be added here for edit mode */}
+                {isEditing && (
+                    <button onClick={handleDelete} className="text-red-600 material-symbols-outlined">delete</button>
+                )}
             </div>
 
             {/* Transaction Type Tabs */}
@@ -101,7 +133,7 @@ export const AddTransactionPage = ({ onBack, onSave, accounts, categories, openS
                 {['Expense', 'Income', 'Transfer'].map(type => (
                     <button
                         key={type}
-                        onClick={() => setTxType(type)}
+                        onClick={() => handleTxTypeChange(type)}
                         className={`tx-type-tab flex-1 pb-2 font-normal ${txType === type ? 'active' : ''}`}
                     >
                         {type}

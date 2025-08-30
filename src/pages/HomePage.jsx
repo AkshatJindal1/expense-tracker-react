@@ -157,7 +157,7 @@ const HomePage = ({ user, transactions, accounts, onNavigate }) => {
         </div>
         <div className="space-y-3">
             {recentTransactions.length > 0 ? (
-                recentTransactions.map(tx => <TransactionCard key={tx.id} tx={tx} />)
+                recentTransactions.map(tx => <TransactionCard key={tx.id} transaction={tx} />)
             ) : (
                 <p className="text-center text-gray-500 py-4">No recent transactions.</p>
             )}
