@@ -3,7 +3,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 
 export const MorePage = ({ onNavigate, onSignOut }) => {
   return (
-    <div className="page p-4 active bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-200 min-h-screen">
+    <div className="page p-4 active text-gray-800 dark:text-gray-200 min-h-screen">
       <h1 className="text-2xl font-medium mb-4">More Options</h1>
       <div className="space-y-3">
         <button

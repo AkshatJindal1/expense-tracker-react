@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const AdjustmentPage = ({ onBack, onSave, accounts, currentBalances, openSelectionSheet }) => {
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -22,7 +22,7 @@ export const AdjustmentPage = ({ onBack, onSave, accounts, currentBalances, open
   };
 
   return (
-    <div className="page p-4 active bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-200 min-h-screen">
+    <div className="page p-4 active   text-gray-800 dark:text-gray-200 min-h-screen">
       <div className="flex items-center mb-6">
         <button onClick={onBack} className="material-symbols-outlined mr-2">arrow_back</button>
         <h1 className="text-2xl font-medium">Adjust Balance</h1>
