@@ -29,7 +29,7 @@ export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, acco
             setDestination(initialData.destination || '')
             setNotes(initialData.notes || '')
             const d = initialData.date?.toDate ? initialData.date.toDate() : new Date();
-            setDate(d.toISOString().split('T')[0]);
+            setDate(d.toLocaleDateString("en-CA")); // yyyy-mm-dd format
             setTime(d.toTimeString().slice(0, 5));
             setIsSplit(initialData.splitAmount > 0);
             setSplitAmount(initialData.splitAmount > 0 ? initialData.splitAmount : '');
@@ -41,7 +41,7 @@ export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, acco
             setSource('');
             setDestination('');
             setNotes('');
-            setDate(now.toISOString().split('T')[0]);
+            setDate(now.toLocaleDateString("en-CA")); // yyyy-mm-dd format
             setTime(now.toTimeString().slice(0, 5));
             setIsSplit(false);
             setSplitAmount('');
