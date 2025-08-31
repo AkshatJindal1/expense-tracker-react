@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const FilterSheet = ({ isOpen, onClose, filters, setFilters, accounts }) => {
   // State to manage whether all account filter chips are shown

@@ -46,6 +46,8 @@ function App() {
         setUser(currentUser);
       } else {
         setUser(null);
+        setCurrentPage('home');
+        setEditingItem(null);
       }
       setLoading(false);
     });
@@ -280,7 +282,7 @@ function App() {
         return (
           <MorePage
             onNavigate={navigateTo}
-            onSignOut={() => handleSignOut}
+            onSignOut={handleSignOut}
           />
         )
       case 'accounts':
