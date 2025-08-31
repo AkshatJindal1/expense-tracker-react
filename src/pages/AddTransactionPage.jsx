@@ -115,25 +115,25 @@ export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, acco
     }
 
     return (
-        <div className="page p-4 active">
+        <div className="page p-4 active text-gray-800 dark:text-gray-200">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center">
                     <button onClick={onBack} className="material-symbols-outlined mr-2">arrow_back</button>
-                    <h1 className="text-2xl font-medium text-gray-800">{isEditing ? 'Edit Transaction' : 'Add Transaction'}</h1>
+                    <h1 className="text-2xl font-medium">{isEditing ? 'Edit Transaction' : 'Add Transaction'}</h1>
                 </div>
                 {isEditing && (
-                    <button onClick={handleDelete} className="text-red-600 material-symbols-outlined">delete</button>
+                    <button onClick={handleDelete} className="text-red-600 ark:text-red-400 material-symbols-outlined">delete</button>
                 )}
             </div>
 
             {/* Transaction Type Tabs */}
-            <div className="flex justify-around border-b mb-4">
+            <div className="flex justify-around border-b border-gray-200 dark:border-slate-700 mb-4">
                 {['Expense', 'Income', 'Transfer'].map(type => (
                     <button
                         key={type}
                         onClick={() => handleTxTypeChange(type)}
-                        className={`tx-type-tab flex-1 pb-2 font-normal ${txType === type ? 'active' : ''}`}
+                        className={`tx-type-tab flex-1 pb-2 font-normal transition-colors ${txType === type ? 'active text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
                     >
                         {type}
                     </button>
@@ -180,13 +180,13 @@ export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, acco
                 />
 
                 <div>
-                    <label className="text-sm font-normal text-gray-700 mb-1">Notes</label>
-                    <div className="form-row p-0">
-                        <span className="material-symbols-outlined p-3">edit_note</span>
+                    <label className="text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 px-1">Notes</label>
+                    <div className="form-row p-0 bg-white dark:bg-slate-800 rounded-lg flex items-center">
+                        <span className="material-symbols-outlined p-3 text-gray-500 dark:text-gray-400">edit_note</span>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            className="w-full bg-transparent p-3 outline-none"
+                            className="w-full bg-transparent p-3 outline-none placeholder-gray-500 dark:placeholder-gray-400"
                             placeholder="Add a note..."
                         ></textarea>
                     </div>
@@ -202,7 +202,7 @@ export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, acco
             )}
 
             {/* Save Button */}
-            <button onClick={handleSave} className="fab save-fab">
+            <button onClick={handleSave} className="fab save-fab bg-blue-600 dark:bg-blue-500 text-white">
                 <span className="material-symbols-outlined">save</span>
             </button>
         </div>
