@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 
 export const FilterSheet = ({ isOpen, onClose, filters, setFilters, accounts }) => {
   // State to manage whether all account filter chips are shown
   const [accountChipsExpanded, setAccountChipsExpanded] = useState(false);
 
   // Reset expansion when the sheet is closed and re-opened
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
       setAccountChipsExpanded(false);
     }

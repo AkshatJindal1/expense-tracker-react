@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 
 const NavButton = ({ icon, label, page, currentPage, onNavigate }) => {
   const isActive = currentPage === page;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 
 export const TransactionCard = ({ transaction, isSelecting, isSelected, onClick }) => {
     const tx = transaction;

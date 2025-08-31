@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 export const SelectionSheet = ({ config, onClose }) => {
   if (!config.isOpen) return null;

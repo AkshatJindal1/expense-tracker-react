@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 export const FormRow = ({ icon, label, value, placeholder, onClick }) => (
   <div onClick={onClick} className="form-row cursor-pointer">

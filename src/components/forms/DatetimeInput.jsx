@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 export const DateTimeInputs = ({ date, time, onDateChange, onTimeChange }) => (
   <div className="grid grid-cols-2 gap-4">

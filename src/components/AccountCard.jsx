@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React from 'react';
 
 const AccountCard = ({ account, isSelecting, isSelected, onClick }) => {
-  // FIX: Use a mapping for icons to support all types
   const accountTypeIcons = {
     Bank: "account_balance",
     "Credit Card": "credit_card",

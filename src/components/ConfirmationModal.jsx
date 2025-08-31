@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React from 'react';
 
 export const ConfirmationModal = ({ config, onConfirm, onCancel }) => {
   if (!config.isOpen) return null;
