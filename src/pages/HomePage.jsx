@@ -123,7 +123,7 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
           <div className="summary-row flex items-center justify-between p-2 rounded-md hover:bg-gray-100 cursor-pointer">
             <div className="flex items-center">
               <span className="material-symbols-outlined mr-3 text-green-600">arrow_downward</span>
-              <span className="font-medium">Income</span>
+              <span className="font-medium">Income New</span>
             </div>
             <div className="font-medium text-green-600">
               {dashboardSummary.monthly.income.toLocaleString("en-IN", { style: "currency", currency: "INR" })}
