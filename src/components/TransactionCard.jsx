@@ -9,9 +9,10 @@ export const TransactionCard = ({ transaction, isSelecting, isSelected, onClick 
     if (tx.type === 'Transfer') detailHTML = `${tx.source} → ${tx.destination}`;
     else if (tx.type === 'Expense') detailHTML = tx.source;
     else detailHTML = tx.destination;
+    const bgColor = isSelected ? 'bg-blue-100 border-blue-500 border' : 'bg-white';
 
     return (
-        <div onClick={() => onClick(tx)} className={`transaction-card bg-white p-3 rounded-lg shadow-sm flex items-center transition-all ${isSelecting ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-100 border-blue-500 border' : ''}`}>
+        <div onClick={() => onClick(tx)} className={`transaction-card p-3 rounded-lg shadow-sm flex items-center transition-all ${isSelecting ? 'cursor-pointer' : ''} ${bgColor}`}>
             {isSelecting && (
                 <span className="selection-indicator material-symbols-outlined mr-3 text-blue-600">
                     {isSelected ? 'check_circle' : 'radio_button_unchecked'}

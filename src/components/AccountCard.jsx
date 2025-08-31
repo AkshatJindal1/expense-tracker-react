@@ -8,9 +8,10 @@ export const AccountCard = ({ account, isSelecting, isSelected, onClick }) => {
     Splitwise: "receipt_long",
   };
   const icon = accountTypeIcons[account.type] || 'credit_score'; // Fallback icon
+  const bgColor = isSelected ? 'bg-blue-100 border-blue-500 border' : 'bg-white';
 
   return (
-    <div onClick={() => onClick(account)} className={`bg-white p-3 rounded-lg shadow-sm flex items-center transition-all ${isSelecting ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-100 border-blue-500 border' : ''}`}>
+    <div onClick={() => onClick(account)} className={`account-card p-3 rounded-lg shadow-sm flex items-center transition-all ${isSelecting ? 'cursor-pointer' : ''} ${bgColor}`}>
       {isSelecting && (
         <span className="selection-indicator material-symbols-outlined mr-3 text-blue-600">
           {isSelected ? 'check_circle' : 'radio_button_unchecked'}
