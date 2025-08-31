@@ -18,6 +18,7 @@ import { CategoriesPage } from './pages/CategoriesPage';
 import { AddAccountPage } from './pages/AddAccountPage';
 import { AddCategoryPage } from './pages/AddCategoryPage';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { Spinner } from './components/Spinner';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -199,7 +200,7 @@ function App() {
   };
 
   if (loading) {
-    return <div>Loading...</div>; // Or a proper spinner component
+    return <Spinner />;
   }
 
   // Function to handle saving a new transaction

@@ -21,21 +21,20 @@ const GoogleIcon = () => (
         <path fill="none" d="M0 0h48v48H0z"></path>
     </svg>
 );
-
-export const LoginPage = ({ onSignIn }) => {
-    return (
-        <div className="page active flex justify-center items-center h-screen">
-            <div className="text-center p-8 bg-white rounded-lg shadow-md">
-                <h1 className="text-2xl font-medium text-gray-800 mb-2">Expense Tracker</h1>
-                <p className="text-gray-600 mb-6">Sign in with Google to sync your data.</p>
-                <button
-                    onClick={onSignIn}
-                    className="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 font-medium py-2 px-4 rounded-full flex items-center justify-center w-full"
-                >
-                    <GoogleIcon />
-                    Sign in with Google
-                </button>
-            </div>
+export const LoginPage = ({ onSignIn }) => (
+    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-100 to-indigo-100 p-4">
+        <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold text-slate-800 tracking-tight">Expense Tracker</h1>
         </div>
-    );
-};
+        <div className="bg-white/70 backdrop-blur-xl p-8 rounded-2xl shadow-sm text-center w-full max-w-sm">
+            <p className="mb-6 text-slate-600">Please sign in to manage your expenses.</p>
+            <button
+                onClick={onSignIn}
+                className="flex items-center justify-center gap-3 w-full px-6 py-3 bg-blue-600 border border-transparent rounded-xl shadow-sm text-white font-semibold hover:bg-blue-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105"
+            >
+                <GoogleIcon />
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+);
