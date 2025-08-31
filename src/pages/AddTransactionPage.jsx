@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import AmountInput from '../components/forms/amountInput';
-import DateTimeInputs from '../components/forms/datetimeInput';
-import FormRow from '../components/forms/formRow';
+import AmountInput from '../components/forms/AmountInput';
+import DateTimeInputs from '../components/forms/DatetimeInput';
+import FormRow from '../components/forms/FormRow';
 import SplitwiseInput from '../components/forms/SplitwiseInput';
 
 export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, accounts, categories, openSelectionSheet }) => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import AccountCard from '../components/AccountCard';
 
 export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) => {

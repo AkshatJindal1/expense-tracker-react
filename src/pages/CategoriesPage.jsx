@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import CategoryCard from '../components/ CategoryCard';
+import React, { useState, useMemo } from 'react';
+import CategoryCard from '../components/CategoryCard';
 
 const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
   const [isSelecting, setIsSelecting] = useState(false);
