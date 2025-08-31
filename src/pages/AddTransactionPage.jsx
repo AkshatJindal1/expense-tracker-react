@@ -22,7 +22,6 @@ export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, acco
     // Set initial date and time on component mount
     useEffect(() => {
         if (initialData) {
-            console.log(initialData)
             setTxType(initialData.type || 'Expense')
             setAmount(initialData.amount || '')
             setCategory(initialData.category || '')
