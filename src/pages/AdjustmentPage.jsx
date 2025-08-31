@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AdjustmentPage = ({ onBack, onSave, accounts, currentBalances, openSelectionSheet }) => {
+export const AdjustmentPage = ({ onBack, onSave, accounts, currentBalances, openSelectionSheet }) => {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [actualBalance, setActualBalance] = useState('');
 
@@ -70,5 +70,3 @@ const AdjustmentPage = ({ onBack, onSave, accounts, currentBalances, openSelecti
     </div>
   );
 };
-
-export default AdjustmentPage;

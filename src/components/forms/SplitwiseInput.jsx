@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SplitwiseInput = ({ isSplit, onToggle, splitAmount, onAmountChange }) => {
+export const SplitwiseInput = ({ isSplit, onToggle, splitAmount, onAmountChange }) => {
   return (
     <>
       <div className="flex items-center justify-between p-2">
@@ -29,5 +29,3 @@ const SplitwiseInput = ({ isSplit, onToggle, splitAmount, onAmountChange }) => {
     </>
   );
 };
-
-export default SplitwiseInput;

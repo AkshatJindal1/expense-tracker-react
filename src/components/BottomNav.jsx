@@ -13,7 +13,7 @@ const NavButton = ({ icon, label, page, currentPage, onNavigate }) => {
   );
 };
 
-const BottomNav = ({ currentPage, onNavigate, onAddTransaction }) => {
+export const BottomNav = ({ currentPage, onNavigate, onAddTransaction }) => {
   const navItems = [
     { icon: 'home', label: 'Home', page: 'home' },
     { icon: 'receipt_long', label: 'History', page: 'transactions' },
@@ -38,5 +38,3 @@ const BottomNav = ({ currentPage, onNavigate, onAddTransaction }) => {
     </nav>
   );
 };
-
-export default BottomNav;

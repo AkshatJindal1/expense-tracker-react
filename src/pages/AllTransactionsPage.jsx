@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { TransactionCard } from '../components/TransactionCard';
 import { FilterSheet } from '../components/FilterSheet';
 
-const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, openSelectionSheet }) => {
+export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, openSelectionSheet }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -169,5 +169,3 @@ const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, openSel
     </>
   );
 };
-
-export default AllTransactionsPage;

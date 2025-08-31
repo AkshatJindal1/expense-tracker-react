@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import AccountCard from '../components/AccountCard';
+import { AccountCard } from '../components/AccountCard';
 
 export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) => {
   const [isSelecting, setIsSelecting] = useState(false);
@@ -27,14 +27,14 @@ export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) =
       onEdit(account);
     }
   };
-  
+
   const toggleSelectionMode = () => {
     if (isSelecting) {
       setSelectedIds(new Set());
     }
     setIsSelecting(!isSelecting);
   };
-  
+
   const handleDeleteSelected = () => {
     onDelete(Array.from(selectedIds));
     toggleSelectionMode();
@@ -74,7 +74,7 @@ export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) =
           </div>
         ))}
       </div>
-      
+
       {!isSelecting && (
         <button onClick={onAddNew} className="fab page-fab">
           <span className="material-symbols-outlined">add</span>
@@ -83,5 +83,3 @@ export const AccountsPage = ({ accounts, onBack, onAddNew, onEdit, onDelete }) =
     </div>
   );
 };
-
-export default AccountsPage;

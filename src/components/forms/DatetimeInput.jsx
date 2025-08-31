@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DateTimeInputs = ({ date, time, onDateChange, onTimeChange }) => (
+export const DateTimeInputs = ({ date, time, onDateChange, onTimeChange }) => (
   <div className="grid grid-cols-2 gap-4">
     <div className="date-time-input">
       <span className="material-symbols-outlined mr-2">calendar_month</span>
@@ -22,5 +22,3 @@ const DateTimeInputs = ({ date, time, onDateChange, onTimeChange }) => (
     </div>
   </div>
 );
-
-export default DateTimeInputs;

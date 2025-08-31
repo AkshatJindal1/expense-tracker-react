@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AddCategoryPage = ({ onSave, onBack, onDelete, initialData, openSelectionSheet, showConfirmation }) => {
+export const AddCategoryPage = ({ onSave, onBack, onDelete, initialData, openSelectionSheet, showConfirmation }) => {
     const isEditing = !!initialData;
     const [name, setName] = useState(initialData?.name || '');
     const [transactionType, setTransactionType] = useState(initialData?.transactionType || '');
@@ -43,5 +43,3 @@ const AddCategoryPage = ({ onSave, onBack, onDelete, initialData, openSelectionS
         </div>
     );
 };
-
-export default AddCategoryPage;

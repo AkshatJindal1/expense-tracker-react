@@ -1,6 +1,6 @@
 import React from 'react';
 
-const AmountInput = ({ value, onChange }) => (
+export const AmountInput = ({ value, onChange }) => (
   <div className="floating-label-container">
     <span className="icon-prefix font-medium text-lg">₹</span>
     <input
@@ -15,5 +15,3 @@ const AmountInput = ({ value, onChange }) => (
     <label htmlFor="tx-amount" className="floating-label">Amount</label>
   </div>
 );
-
-export default AmountInput;

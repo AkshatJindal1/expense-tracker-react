@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import CategoryCard from '../components/CategoryCard';
+import { CategoryCard } from '../components/CategoryCard';
 
-const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
+export const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
@@ -13,7 +13,7 @@ const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
       return acc;
     }, {});
   }, [categories]);
-  
+
   // ... (selection logic similar to AccountsPage) ...
   const handleCardClick = (category) => {
     if (isSelecting) {
@@ -28,14 +28,14 @@ const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
       onEdit(category);
     }
   };
-  
+
   const toggleSelectionMode = () => {
     if (isSelecting) {
       setSelectedIds(new Set());
     }
     setIsSelecting(!isSelecting);
   };
-  
+
   const handleDeleteSelected = () => {
     onDelete(Array.from(selectedIds));
     toggleSelectionMode();
@@ -43,7 +43,7 @@ const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
 
   return (
     <div className="page active">
-       <div className="sticky top-0 z-10 bg-gray-50 pt-4 px-4 pb-4">
+      <div className="sticky top-0 z-10 bg-gray-50 pt-4 px-4 pb-4">
         <div className="flex items-center justify-between mb-4">
           {isSelecting ? (
             <>
@@ -68,13 +68,13 @@ const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
             <h3 className="text-sm font-medium text-gray-500 mt-4 mb-2">{type}</h3>
             <div className="space-y-3">
               {cats.map(cat => (
-                 <CategoryCard key={cat.id} category={cat} isSelecting={isSelecting} isSelected={selectedIds.has(cat.id)} onClick={handleCardClick} />
+                <CategoryCard key={cat.id} category={cat} isSelecting={isSelecting} isSelected={selectedIds.has(cat.id)} onClick={handleCardClick} />
               ))}
             </div>
           </div>
         ))}
       </div>
-       {!isSelecting && (
+      {!isSelecting && (
         <button onClick={onAddNew} className="fab page-fab">
           <span className="material-symbols-outlined">add</span>
         </button>
@@ -82,5 +82,3 @@ const CategoriesPage = ({ categories, onBack, onAddNew, onEdit, onDelete }) => {
     </div>
   );
 };
-
-export default CategoriesPage;

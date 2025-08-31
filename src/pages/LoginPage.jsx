@@ -22,7 +22,7 @@ const GoogleIcon = () => (
     </svg>
 );
 
-const LoginPage = ({ onSignIn }) => {
+export const LoginPage = ({ onSignIn }) => {
     return (
         <div className="page active flex justify-center items-center h-screen">
             <div className="text-center p-8 bg-white rounded-lg shadow-md">
@@ -39,5 +39,3 @@ const LoginPage = ({ onSignIn }) => {
         </div>
     );
 };
-
-export default LoginPage;

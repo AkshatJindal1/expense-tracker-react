@@ -4,19 +4,19 @@ import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from
 import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc } from 'firebase/firestore';
 
 // Import your page components
-import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import BottomNav from './components/BottomNav';
-import AddTransactionPage from './pages/AddTransactionPage';
+import { LoginPage } from './pages/LoginPage';
+import { HomePage } from './pages/HomePage';
+import { BottomNav } from './components/BottomNav';
+import { AddTransactionPage } from './pages/AddTransactionPage';
 import { SelectionSheet } from './components/SelectionSheet';
-import AllTransactionsPage from './pages/AllTransactionsPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import MorePage from './pages/MorePage';
-import AdjustmentPage from './pages/AdjustmentPage';
-import AccountsPage from './pages/AccountsPage';
-import CategoriesPage from './pages/CategoriesPage';
-import AddAccountPage from './pages/AddAccountPage';
-import AddCategoryPage from './pages/AddCategoryPage';
+import { AllTransactionsPage } from './pages/AllTransactionsPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { MorePage } from './pages/MorePage';
+import { AdjustmentPage } from './pages/AdjustmentPage';
+import { AccountsPage } from './pages/AccountsPage';
+import { CategoriesPage } from './pages/CategoriesPage';
+import { AddAccountPage } from './pages/AddAccountPage';
+import { AddCategoryPage } from './pages/AddCategoryPage';
 import { ConfirmationModal } from './components/ConfirmationModal';
 
 function App() {

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CategoryCard = ({ category, isSelecting, isSelected, onClick }) => (
+export const CategoryCard = ({ category, isSelecting, isSelected, onClick }) => (
   <div
     onClick={() => onClick(category)}
     className={`bg-white p-3 rounded-lg shadow-sm flex items-center transition-all ${isSelecting ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-100 border-blue-500 border' : ''}`}>
@@ -15,5 +15,3 @@ const CategoryCard = ({ category, isSelecting, isSelected, onClick }) => (
     </div>
   </div>
 );
-
-export default CategoryCard;

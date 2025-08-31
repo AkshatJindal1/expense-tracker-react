@@ -22,7 +22,7 @@ ChartJS.register(
   Legend
 );
 
-const AnalyticsPage = ({ transactions, onBack }) => {
+export const AnalyticsPage = ({ transactions, onBack }) => {
 
   // useMemo will recalculate analytics data only when the transactions prop changes
   const analyticsData = useMemo(() => {
@@ -176,5 +176,3 @@ const AnalyticsPage = ({ transactions, onBack }) => {
     </div>
   );
 };
-
-export default AnalyticsPage;

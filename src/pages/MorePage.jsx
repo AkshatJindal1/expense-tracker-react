@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MorePage = ({ onNavigate, onSignOut }) => {
+export const MorePage = ({ onNavigate, onSignOut }) => {
   return (
     <div className="page p-4 active">
       <h1 className="text-2xl font-medium text-gray-800 mb-4">More Options</h1>
@@ -37,5 +37,3 @@ const MorePage = ({ onNavigate, onSignOut }) => {
     </div>
   );
 };
-
-export default MorePage;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AddAccountPage = ({ onSave, onBack, onDelete, initialData, openSelectionSheet, showConfirmation }) => {
+export const AddAccountPage = ({ onSave, onBack, onDelete, initialData, openSelectionSheet, showConfirmation }) => {
     const isEditing = !!initialData;
     const [name, setName] = useState(initialData?.name || '');
     const [type, setType] = useState(initialData?.type || '');
@@ -44,5 +44,3 @@ const AddAccountPage = ({ onSave, onBack, onDelete, initialData, openSelectionSh
         </div>
     );
 };
-
-export default AddAccountPage;

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TransactionCard } from '../components/TransactionCard';
 
-const HomePage = ({ user, transactions, accounts, onNavigate }) => {
+export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
   const [expandedSummary, setExpandedSummary] = useState(null); // 'Income', 'Spending', or null
   const [expandedBalances, setExpandedBalances] = useState({}); // e.g., { 'Bank': true }
 
@@ -229,5 +229,3 @@ const HomePage = ({ user, transactions, accounts, onNavigate }) => {
     </div>
   );
 };
-
-export default HomePage; 
