@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const FormRow = ({ icon, label, value, placeholder, onClick }) => (
+const FormRow = ({ icon, label, value, placeholder, onClick }) => (
   <div onClick={onClick} className="form-row cursor-pointer">
     <span className="material-symbols-outlined">{icon}</span>
     <span className="form-label">{label}</span>
