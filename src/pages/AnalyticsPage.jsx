@@ -24,11 +24,11 @@ ChartJS.register(
 );
 
 export const AnalyticsPage = ({ transactions, onBack }) => {
-  const { theme } = useTheme(); // Get the current theme
+  const { resolvedTheme } = useTheme(); // Get the current theme
 
   // Define chart colors based on the current theme for better visibility
-  const textColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-  const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+  const textColor = resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+  const gridColor = resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
   const lightModeColors = [
   '#4285F4', '#DB4437', '#F4B400', '#0F9D58', 
@@ -102,8 +102,8 @@ const darkModeColors = [
     datasets: [
       {
         data: analyticsData.sortedCategoriesWithoutAdjustment.map(c => c[1]),
-        backgroundColor: theme === "dark" ? darkModeColors : lightModeColors,
-        borderColor: theme === 'dark' ? '#1e293b' : '#ffffff',
+        backgroundColor: resolvedTheme === "dark" ? darkModeColors : lightModeColors,
+        borderColor: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
         borderWidth: 2,
       },
     ],
@@ -115,7 +115,7 @@ const darkModeColors = [
     datasets: [{
       label: 'Total Spending',
       data: analyticsData.barChartData,
-      backgroundColor: theme === "dark" ? '#8AB4F8' : '#4285F4',
+      backgroundColor: resolvedTheme === "dark" ? '#8AB4F8' : '#4285F4',
       borderRadius: 4,
     }]
   };
