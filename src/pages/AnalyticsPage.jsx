@@ -10,6 +10,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
+import { useTheme } from '../context/ThemeContext.jsx'; 
 
 // This registration is necessary for Chart.js v3+ with react-chartjs-2
 ChartJS.register(
@@ -23,6 +24,21 @@ ChartJS.register(
 );
 
 export const AnalyticsPage = ({ transactions, onBack }) => {
+  const { theme } = useTheme(); // Get the current theme
+
+  // Define chart colors based on the current theme for better visibility
+  const textColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+  const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+  const lightModeColors = [
+  '#4285F4', '#DB4437', '#F4B400', '#0F9D58', 
+  '#AB47BC', '#00ACC1', '#FF7043', '#795548'
+];
+
+const darkModeColors = [
+  '#8AB4F8', '#F28B82', '#FDD663', '#81C995',
+  '#C58AF9', '#78D9EC', '#FFAB91', '#BCAAA4'
+];
 
   // useMemo will recalculate analytics data only when the transactions prop changes
   const analyticsData = useMemo(() => {
@@ -86,8 +102,8 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
     datasets: [
       {
         data: analyticsData.sortedCategoriesWithoutAdjustment.map(c => c[1]),
-        backgroundColor: ["#4285F4", "#DB4437", "#F4B400", "#0F9D58", "#AB47BC", "#00ACC1", "#FF7043"],
-        borderColor: '#fff',
+        backgroundColor: theme === "dark" ? darkModeColors : lightModeColors,
+        borderColor: theme === 'dark' ? '#1e293b' : '#ffffff',
         borderWidth: 2,
       },
     ],
@@ -99,54 +115,68 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
     datasets: [{
       label: 'Total Spending',
       data: analyticsData.barChartData,
-      backgroundColor: '#4285F4',
+      backgroundColor: theme === "dark" ? '#8AB4F8' : '#4285F4',
       borderRadius: 4,
     }]
   };
 
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { color: textColor, callback: (value) => `₹${value / 1000}k` },
+        grid: { color: gridColor },
+      },
+      x: {
+        ticks: { color: textColor },
+        grid: { display: false },
+      },
+    },
+  };
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+  };
+
   return (
-    <div className="page p-4 active">
+    <div className="page p-4 active text-gray-800 dark:text-gray-200 min-h-screen">
       <div className="flex items-center mb-4">
         <button onClick={onBack} className="material-symbols-outlined mr-2">arrow_back</button>
-        <h1 className="text-2xl font-medium text-gray-800">Analytics</h1>
+        <h1 className="text-2xl font-medium">Analytics</h1>
       </div>
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-          <p className="text-sm text-gray-500">Avg. Daily Spend</p>
-          <p className="text-lg font-medium text-gray-800">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Daily Spend</p>
+          <p className="text-lg font-medium">
             {analyticsData.avgDailySpend.toLocaleString("en-IN", { style: "currency", currency: "INR" })}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-          <p className="text-sm text-gray-500">Avg. Transaction</p>
-          <p className="text-lg font-medium text-gray-800">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Transaction</p>
+          <p className="text-lg font-medium">
             {analyticsData.avgTxSpend.toLocaleString("en-IN", { style: "currency", currency: "INR" })}
           </p>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <h2 className="text-base font-medium mb-3 text-gray-700">Month-on-Month Spending</h2>
-        <Bar
-          data={barChartData}
-          options={{
-            plugins: { legend: { display: false } },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { callback: (value) => `₹${value / 1000}k` },
-              },
-              x: { grid: { display: false } }
-            }
-          }} />
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm mb-6 h-64">
+        <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">Month-on-Month Spending</h2>
+        <Bar data={barChartData} options={chartOptions} />
       </div>
 
       {analyticsData.sortedCategoriesWithoutAdjustment.length > 0 && (
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-          <h2 className="text-base font-medium mb-3 text-gray-700">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm mb-6">
+          <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
             Spending for {new Date().toLocaleString('default', { month: 'long' })}
           </h2>
-          <Doughnut data={doughnutChartData} options={{ plugins: { legend: { display: false } } }} />
+          <div className="h-64 mb-4">
+          <Doughnut data={doughnutChartData} options={doughnutOptions} />
+          </div>
           {(() => {
             if (analyticsData.totalMonthlySpendWithoutAdjustment === 0) return null;
             return doughnutChartData.labels.map((label, index) => (
@@ -162,11 +192,11 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
         </div>
       )}
 
-      <div className="bg-white p-4 rounded-lg shadow-sm">
-        <h2 className="text-base font-medium mb-3 text-gray-700">This Month's Spending by Category</h2>
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
+        <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">This Month's Spending by Category</h2>
         <div id="category-summary-list">
           {analyticsData.sortedCategories.map(([name, total]) => (
-            <div key={name} className="flex justify-between items-center py-2 border-b">
+            <div key={name} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-slate-700">
               <span className="font-normal">{name}</span>
               <span className="font-medium">{total.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
             </div>

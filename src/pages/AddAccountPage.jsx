@@ -14,7 +14,6 @@ export const AddAccountPage = ({ onSave, onBack, onDelete, initialData, openSele
         onSave({ id: initialData?.id, name, type });
     };
 
-    // FIX: Replaced window.confirm with the new confirmation modal
     const handleDelete = () => {
         onDelete(initialData.id)
     };

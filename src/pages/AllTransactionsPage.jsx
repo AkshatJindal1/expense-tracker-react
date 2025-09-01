@@ -71,7 +71,7 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
     return filteredAndSortedTransactions.reduce((acc, tx) => {
       const dateKey = tx.date.toDate().toLocaleDateString('en-CA'); // YYYY-MM-DD format
       if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(tx);
+      acc[dateKey].push(tx)
       return acc;
     }, {});
   }, [filteredAndSortedTransactions, sort.by]);
@@ -101,20 +101,23 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
 
   return (
     <>
-      <div className="page active">
-        <div className="sticky top-0 z-10 bg-gray-50 pt-4 px-4 pb-4">
+      <div className="page active text-gray-800 dark:text-gray-200 min-h-screen">
+        <div className="sticky top-0 z-10 bg-gray-50 dark:bg-slate-900 pt-4 px-4 pb-4">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             {isSelecting ? (
               <>
                 <button onClick={toggleSelectionMode} className="material-symbols-outlined">close</button>
                 <span className="font-medium">{selectedIds.size} selected</span>
-                <button onClick={handleDeleteSelected} disabled={selectedIds.size === 0} className="material-symbols-outlined text-red-600 disabled:text-gray-400">delete</button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={selectedIds.size === 0}
+                  className="material-symbols-outlined text-red-600 dark:text-red-400 disabled:text-gray-400 dark:disabled:text-gray-600">delete</button>
               </>
             ) : (
               <>
                 <div className="flex items-center">
-                  <h1 className="text-2xl font-medium text-gray-800">All Transactions</h1>
+                  <h1 className="text-2xl font-medium">All Transactions</h1>
                 </div>
                 <button onClick={toggleSelectionMode} className="p-2 material-symbols-outlined">select</button>
               </>
@@ -124,20 +127,20 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
           {/* Search and Filter Controls */}
           <div className="flex items-center gap-2 mt-4">
             <div className="flex-grow relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">search</span>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white rounded-lg p-3 pl-10 shadow-sm"
+                className="w-full bg-white dark:bg-slate-800 rounded-lg p-3 pl-10 shadow-sm placeholder-gray-500 dark:placeholder-gray-400 border border-transparent focus:border-blue-500 focus:ring-0 outline-none"
                 placeholder="Search..."
               />
             </div>
-            <button onClick={() => setIsFilterOpen(true)} className="p-3 bg-white rounded-lg shadow-sm">
-              <span className="material-symbols-outlined">filter_list</span>
+            <button onClick={() => setIsFilterOpen(true)} className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+              <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">filter_list</span>
             </button>
-            <button onClick={handleSortClick} className="p-3 bg-white rounded-lg shadow-sm">
-              <span className="material-symbols-outlined">sort</span>
+            <button onClick={handleSortClick} className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+              <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">sort</span>
             </button>
           </div>
         </div>
@@ -147,14 +150,14 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
           {Object.keys(groupedTransactions).length > 0 ? (
             Object.entries(groupedTransactions).map(([dateKey, txs]) => (
               <div key={dateKey}>
-                <h3 className="text-sm font-medium text-gray-500 mt-4 mb-2">{new Date(dateKey).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-4 mb-2">{new Date(dateKey).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
                 <div className="space-y-3">
                   {txs.map(tx => <TransactionCard key={tx.id} transaction={tx} isSelecting={isSelecting} isSelected={selectedIds.has(tx.id)} onClick={handleCardClick} />)}
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 mt-8">No transactions found.</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No transactions found.</p>
           )}
         </div>
       </div>

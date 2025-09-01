@@ -1,26 +1,34 @@
+import React from 'react';
+import { useTheme } from '../context/ThemeContext.jsx';
 
-import { useTheme } from '../context/ThemeContext';
+export const themeOptions = [
+  { value: 'light', label: 'Light', icon: 'light_mode' },
+  { value: 'dark', label: 'Dark', icon: 'dark_mode' },
+  { value: 'system', label: 'System', icon: 'brightness_auto' },
+];
 
 export const ThemeToggle = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   return (
-    <button
-      onClick={toggleTheme}
-      className="w-full text-left bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm flex items-center justify-between"
-    >
-      <div className="flex items-center">
-        <span className="material-symbols-outlined mr-3">
-          {theme === 'light' ? 'dark_mode' : 'light_mode'}
-        </span>
-        <span>
-          {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-        </span>
-      </div>
-      <div className="relative">
-        <div className={`w-12 h-6 rounded-full transition-colors ${theme === 'dark' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${theme === 'dark' ? 'translate-x-6' : ''}`}></div>
-      </div>
-    </button>
+    <div>
+        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 px-1">Appearance</label>
+        <div className="grid grid-cols-3 gap-2 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+            {themeOptions.map((option) => (
+                <button
+                    key={option.value}
+                    onClick={() => setTheme(option.value)}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                        theme === option.value
+                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                    }`}
+                >
+                    <span className="material-symbols-outlined !text-base">{option.icon}</span>
+                    {option.label}
+                </button>
+            ))}
+        </div>
+    </div>
   );
 };

@@ -250,9 +250,9 @@ input[type="date"]:not(.has-value):before {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #e0e0e0;
     transition: 0.4s;
     border-radius: 34px;
+    @apply bg-gray-300 dark:bg-slate-700;
 }
 
 .m3-slider:before {
@@ -262,14 +262,14 @@ input[type="date"]:not(.has-value):before {
     width: 24px;
     left: 4px;
     bottom: 4px;
-    background-color: white;
     transition: 0.4s;
     border-radius: 50%;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    @apply bg-white;
 }
 
 input:checked+.m3-slider {
-    background-color: #0b57d0;
+    @apply bg-blue-600 dark:bg-blue-500;
 }
 
 input:checked+.m3-slider:before {
@@ -388,7 +388,7 @@ input:checked+.m3-slider:before {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #f8f9fa;
+    @apply bg-gray-50 dark:bg-slate-900;
 }
 
 .m3-spinner {
@@ -412,8 +412,11 @@ input:checked+.m3-slider:before {
     stroke-dashoffset: 0;
     transform-origin: center;
     animation: dash 1.4s ease-in-out infinite;
+    /* Default (light mode) color */
     stroke: #0b57d0;
-    /* Google Blue */
+}
+.dark .m3-spinner-circle {
+    stroke: #8AB4F8; /* A lighter blue for dark backgrounds */
 }
 
 @keyframes dash {
