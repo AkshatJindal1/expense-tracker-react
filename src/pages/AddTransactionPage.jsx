@@ -111,7 +111,7 @@ export const AddTransactionPage = ({ onBack, onSave, onDelete, initialData, acco
             .map(a => ({ value: a.name, subtext: a.type }))
             .sort((a, b) => a.value.localeCompare(b.value));
 
-        openSelectionSheet(`Select ${txType === 'Expense' ? 'Source' : 'Destination'}`, items, currentValue, (value) => setter(value));
+        openSelectionSheet('Select Account', items, currentValue, (value) => setter(value));
     }
 
     return (

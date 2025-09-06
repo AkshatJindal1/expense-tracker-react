@@ -206,8 +206,16 @@ function App() {
   // Function to handle saving a new transaction
   const handleSaveTransaction = async (transactionData) => {
     const { id, ...data } = transactionData;
+    const involved = [];
+    if (data.type === 'Expense' && data.source) involved.push(data.source);
+    if (data.type === 'Income' && data.destination) involved.push(data.destination);
+    if (data.type === 'Transfer') {
+      if (data.source) involved.push(data.source);
+      if (data.destination) involved.push(data.destination);
+    }
+    const finalData = {...data, involvedAccounts: involved };
     const ref = collection(db, 'users', user.uid, 'transactions');
-    if (id) await updateDoc(doc(ref, id), data); else await addDoc(ref, data);
+    if (id) await updateDoc(doc(ref, id), finalData); else await addDoc(ref, finalData);
     navigateTo('transactions');
   };
 
@@ -228,6 +236,7 @@ function App() {
       notes: `Balance adjustment for ${accountName}.`,
       splitAmount: 0,
       date: new Date(), // Use serverTimestamp() in production
+      involvedAccounts: [accountName],
     };
 
     try {
@@ -261,7 +270,8 @@ function App() {
       case 'transactions':
         return (
           <AllTransactionsPage
-            transactions={transactions}
+            user={user}
+            db={db}
             onEdit={(item) => navigateTo('add-transaction', item)}
             onDelete={(ids) => showConfirmation({
               title: `Delete ${ids.length} Transaction(s)?`, message: 'This cannot be undone.', confirmText: 'Delete',
@@ -284,6 +294,7 @@ function App() {
           <MorePage
             onNavigate={navigateTo}
             onSignOut={handleSignOut}
+            onMigrate={migrateTransactions}
           />
         )
       case 'accounts':

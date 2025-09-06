@@ -1,7 +1,7 @@
 import React from 'react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
-export const MorePage = ({ onNavigate, onSignOut }) => {
+export const MorePage = ({ onNavigate, onSignOut, onMigrate }) => {
   return (
     <div className="page p-4 active text-gray-800 dark:text-gray-200 min-h-screen">
       <h1 className="text-2xl font-medium mb-4">More Options</h1>

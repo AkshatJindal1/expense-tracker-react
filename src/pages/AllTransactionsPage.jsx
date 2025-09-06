@@ -1,8 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { collection, query, orderBy, where, limit, getDocs, startAfter } from 'firebase/firestore';
 import { TransactionCard } from '../components/TransactionCard';
 import { FilterSheet } from '../components/FilterSheet';
+import { Spinner } from '../components/Spinner.jsx';
 
-export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, openSelectionSheet }) => {
+const PAGE_SIZE = 25;
+
+export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, openSelectionSheet }) => {
+  const [transactions, setTransactions] = useState([]);
+  const [lastVisible, setLastVisible] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -15,33 +25,77 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  // useMemo efficiently recalculates the displayed transactions only when data or filters change.
-  const filteredAndSortedTransactions = useMemo(() => {
-    let processed = [...transactions];
+  const buildQuery = useCallback((startAfterDoc = null) => {
+    const transactionsRef = collection(db, 'users', user.uid, 'transactions');
+    let q = query(transactionsRef, orderBy(sort.by, sort.order));
 
-    // Filtering logic
-    processed = processed.filter(tx => {
-      const searchTermMatch = !searchTerm || tx.category?.toLowerCase().includes(searchTerm.toLowerCase()) || tx.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-      const startDateMatch = !filters.startDate || tx.date.toDate() >= new Date(filters.startDate);
-      const endDateMatch = !filters.endDate || tx.date.toDate() <= new Date(filters.endDate);
-      const typeMatch = filters.type.length === 0 || filters.type.includes(tx.type);
-      const accountMatch = filters.account.length === 0 || filters.account.includes(tx.source) || filters.account.includes(tx.destination);
-      return searchTermMatch && startDateMatch && endDateMatch && typeMatch && accountMatch;
-    });
+    if (filters.startDate) {
+      q = query(q, where('date', '>=', new Date(filters.startDate)));
+    }
+    if (filters.endDate) {
+      // Add 1 day to end date to make it inclusive
+      const endDate = new Date(filters.endDate);
+      endDate.setDate(endDate.getDate() + 1);
+      q = query(q, where('date', '<', endDate));
+    }
+    if (filters.type.length > 0) {
+      q = query(q, where('type', 'in', filters.type));
+    }
+    if (filters.account.length > 0) {
+      q = query(q, where('involvedAccounts', 'array-contains-any', filters.account));
+    }
 
-    // Sorting logic
-    processed.sort((a, b) => {
-      if (sort.by === 'date') {
-        return sort.order === 'asc' ? a.date.toMillis() - b.date.toMillis() : b.date.toMillis() - a.date.toMillis();
+    if (startAfterDoc) {
+      q = query(q, startAfter(startAfterDoc));
+    }
+
+    q = query(q, limit(PAGE_SIZE));
+    return q;
+  }, [db, user.uid, sort, filters]);
+
+  const fetchTransactions = useCallback(async (loadMore = false) => {
+    if (!loadMore) {
+      setLoading(true);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    const q = buildQuery(loadMore ? lastVisible : null);
+
+    try {
+      const documentSnapshots = await getDocs(q);
+      const newTransactions = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      if (!loadMore) setTransactions(newTransactions);
+      else setTransactions(prev => [...prev, ...newTransactions]);
+
+      const lastDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+      setLastVisible(lastDoc);
+
+      if (documentSnapshots.docs.length < 25) {
+        setHasMore(false);
       }
-      if (sort.by === 'amount') {
-        return sort.order === 'asc' ? a.amount - b.amount : b.amount - a.amount;
-      }
-      return 0;
-    });
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      // Handle the error appropriately in your UI
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [buildQuery, lastVisible]);
 
-    return processed;
-  }, [transactions, searchTerm, filters, sort]);
+  useEffect(() => {
+    fetchTransactions();
+  }, [filters, sort]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx =>
+      !searchTerm
+      || tx.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      || tx.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [transactions, searchTerm]);
 
   const getCurrentSortLabel = () => {
     if (sort.by === 'date' && sort.order === 'desc') return 'Date (Newest First)';
@@ -66,15 +120,15 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
 
   // Group transactions by date for rendering
   const groupedTransactions = useMemo(() => {
-    if (sort.by !== 'date') return { 'all': filteredAndSortedTransactions };
+    if (sort.by !== 'date') return { 'all': filteredTransactions };
 
-    return filteredAndSortedTransactions.reduce((acc, tx) => {
+    return filteredTransactions.reduce((acc, tx) => {
       const dateKey = tx.date.toDate().toLocaleDateString('en-CA'); // YYYY-MM-DD format
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(tx)
       return acc;
     }, {});
-  }, [filteredAndSortedTransactions, sort.by]);
+  }, [filteredTransactions, sort.by]);
 
   const handleCardClick = (tx) => {
     if (isSelecting) {
@@ -95,6 +149,8 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
   const handleDeleteSelected = () => {
     if (selectedIds.size > 0) {
       onDelete(Array.from(selectedIds));
+      // After deletion, we should refetch to get a clean state
+      fetchTransactions();           
     }
     toggleSelectionMode();
   };
@@ -146,6 +202,7 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
         </div>
 
         {/* Transaction List */}
+        {loading ? <Spinner /> : (
         <div className="space-y-4 px-4 pb-4">
           {Object.keys(groupedTransactions).length > 0 ? (
             Object.entries(groupedTransactions).map(([dateKey, txs]) => (
@@ -159,7 +216,18 @@ export const AllTransactionsPage = ({ transactions, onEdit, onDelete, accounts, 
           ) : (
             <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No transactions found.</p>
           )}
+          {hasMore && (
+            <div className="text-center mt-6">
+                <button
+                  onClick={() => fetchTransactions(true)}
+                  disabled={loadingMore}
+                  className="text-blue-600 dark:text-blue-400 font-medium disabled:opacity-50">
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+          )}
         </div>
+        )}
       </div>
 
       <FilterSheet
