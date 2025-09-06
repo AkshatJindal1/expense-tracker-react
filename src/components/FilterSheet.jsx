@@ -64,7 +64,7 @@ export const FilterSheet = ({ isOpen, onClose, filters, setFilters, accounts }) 
           {/* Date Filters */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Start Date 1</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Start Date</label>
               <input
                 type="date"
                 className="w-full filter-input bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-lg p-2"
