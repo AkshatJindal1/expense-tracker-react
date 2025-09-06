@@ -63,18 +63,25 @@ export const FilterSheet = ({ isOpen, onClose, filters, setFilters, accounts }) 
         <div className="space-y-4">
           {/* Date Filters */}
           <div className="grid grid-cols-2 gap-3">
-            <input
-              type="date"
-              className="w-full filter-input bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-lg p-2"
-              style={{ colorScheme: 'dark' }}
-              value={localFilters.startDate}
-              onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))} />
-            <input
-              type="date"
-              className="w-full filter-input bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-lg p-2"
-              style={{ colorScheme: 'dark' }}
-              value={localFilters.endDate}
-              onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))} />
+            <div>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Start Date</label>
+              <input
+                type="date"
+                className="w-full filter-input bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-lg p-2"
+                style={{ colorScheme: 'dark' }}
+                value={localFilters.startDate}
+                onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">End Date</label>
+              <input
+                type="date"
+                className="w-full filter-input bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-lg p-2"
+                style={{ colorScheme: 'dark' }}
+                value={localFilters.endDate}
+                onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))} />
+            </div>
+
           </div>
 
           {/* Type Filter */}
