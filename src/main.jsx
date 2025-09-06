@@ -7,7 +7,7 @@ import { ThemeProvider } from './context/ThemeContext.jsx'
 
 // Initialize Sentry for logs.
 Sentry.init({
-      dsn: import.meta.env.VITE_SENTRY_DSN, // Use the environment variable here
+      dsn: import.meta.env.VITE_SENTRY_DSN,
       integrations: [
         Sentry.browserTracingIntegration(),
         Sentry.replayIntegration(),
