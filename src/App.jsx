@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { auth, db } from './firebase'; // Import from your new file
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -24,6 +24,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home'); // For navigation
+  const [pageHistory, setPageHistory] = useState(['home']); // Navigation history stack.
 
   // Data states
   const [transactions, setTransactions] = useState([]);
@@ -48,6 +49,7 @@ function App() {
       } else {
         setUser(null);
         setCurrentPage('home');
+        setPageHistory(['home']);
         setEditingItem(null);
       }
       setLoading(false);
@@ -91,6 +93,73 @@ function App() {
     };
   }, [user]); // This effect re-runs when the user state changes
 
+  // --- Navigation Logic ---
+  const handleBack = useCallback(() => {
+    setPageHistory(prev => {
+      if (prev.length <= 1) {
+        // If on a root page (like 'home'), do nothing. This prevents closing the app.
+        return prev;
+      }
+      const newHistory = prev.slice(0, -1);
+      const previousPage = newHistory[newHistory.length - 1];
+      setCurrentPage(previousPage);
+      setEditingItem(null); // Clear editing item on back navigation
+      return newHistory;
+    });
+  }, []);
+
+  const navigateTo = (page, itemToEdit = null) => {
+    setEditingItem(itemToEdit);
+    setCurrentPage(page);
+    setPageHistory(prev => {
+      // Avoid pushing duplicates if the user clicks the same navigation item twice
+      if (prev[prev.length - 1] === page) return prev;
+      return [...prev, page];
+    });
+  };
+
+  const handleBottomNav = (page) => {
+    // Bottom nav navigates to root pages, so we reset the history to that page
+    setCurrentPage(page);
+    setPageHistory([page]);
+    setEditingItem(null);
+  };
+
+  // --- Swipe Gesture Handling ---
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const swipeThreshold = 75; // Minimum distance for a swipe to be registered
+
+  const handleTouchStart = (e) => {
+    // Don't register swipe if it's on an input, button, or slider
+    const target = e.target;
+    if (target.closest('input, button, [role="button"]')) {
+      touchStartX.current = 0;
+      return;
+    }
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = 0; // Reset end position
+  };
+
+  const handleTouchMove = (e) => {
+    if (touchStartX.current === 0) return;
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === 0 || touchEndX.current === 0) return;
+    const swipedDistance = touchEndX.current - touchStartX.current;
+
+    // Swipe Right (triggers back navigation)
+    if (swipedDistance > swipeThreshold) {
+      handleBack();
+    }
+
+    // Reset values for the next touch
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
+
   // Handler function to open the sheet
   // Child components will call this function to trigger the modal.
   const openSelectionSheet = (title, items, currentValue, onSelect) => {
@@ -129,7 +198,7 @@ function App() {
     } else {
       await addDoc(collectionRef, data);
     }
-    navigateTo('accounts');
+    handleBack();
   };
 
   // Function to handle delete accounts.
@@ -149,18 +218,13 @@ function App() {
     } else {
       await addDoc(collectionRef, data);
     }
-    navigateTo('categories');
+    handleBack();
   };
 
   // Function to handle delete categories.
   const performDeleteCategories = async (ids) => {
     const promises = ids.map(id => deleteDoc(doc(db, 'users', user.uid, 'categories', id)));
     await Promise.all(promises);
-  };
-
-  const navigateTo = (page, itemToEdit = null) => {
-    setEditingItem(itemToEdit);
-    setCurrentPage(page);
   };
 
   const currentBalances = useMemo(() => {
@@ -215,8 +279,15 @@ function App() {
     }
     const finalData = { ...data, involvedAccounts: involved };
     const ref = collection(db, 'users', user.uid, 'transactions');
-    if (id) await updateDoc(doc(ref, id), finalData); else await addDoc(ref, finalData);
-    navigateTo('transactions');
+    if (id) {
+      await updateDoc(doc(ref, id), finalData);
+      handleBack();
+    } else {
+      await addDoc(ref, finalData);
+      // Reset history to the transactions list for a clean navigation stack
+      setCurrentPage('transactions');
+      setPageHistory(['transactions']);
+    }
   };
 
   const performDeleteTransactions = async (ids) => {
@@ -241,7 +312,7 @@ function App() {
 
     try {
       await addDoc(collection(db, 'users', user.uid, 'transactions'), adjTx);
-      navigateTo('home');
+      handleBack();
     } catch (error) {
       console.error("Error saving adjustment:", error);
     }
@@ -253,12 +324,12 @@ function App() {
         return (
           <AddTransactionPage
             onSave={handleSaveTransaction}
-            onBack={() => navigateTo('transactions')}
+            onBack={handleBack}
             onDelete={(id) => showConfirmation({
               title: 'Delete Transaction?', message: 'This cannot be undone.', confirmText: 'Delete',
               onConfirm: async () => {
                 await performDeleteTransactions([id]);
-                navigateTo('transactions');
+                handleBack();
               }
             })}
             initialData={editingItem}
@@ -286,7 +357,7 @@ function App() {
         return (
           <AnalyticsPage
             transactions={transactions}
-            onBack={() => navigateTo('home')}
+            onBack={handleBack}
           />
         );
       case 'more':
@@ -300,7 +371,7 @@ function App() {
         return (
           <AccountsPage
             accounts={accounts}
-            onBack={() => navigateTo('more')}
+            onBack={handleBack}
             onAddNew={() => navigateTo('add-account')}
             onEdit={(item) => navigateTo('add-account', item)}
             onDelete={(ids) => showConfirmation({
@@ -315,7 +386,7 @@ function App() {
         return (
           <CategoriesPage
             categories={categories}
-            onBack={() => navigateTo('more')}
+            onBack={handleBack}
             onAddNew={() => navigateTo('add-category')}
             onEdit={(item) => navigateTo('add-category', item)}
             onDelete={(ids) => showConfirmation({
@@ -330,14 +401,14 @@ function App() {
         return (
           <AddAccountPage
             onSave={handleSaveAccount}
-            onBack={() => navigateTo('accounts')}
+            onBack={handleBack}
             onDelete={(id) => showConfirmation({
               title: 'Delete Account?',
               message: 'Are you sure you want to delete this account? This action cannot be undone.',
               confirmText: 'Delete',
               onConfirm: async () => {
                 await performDeleteAccounts([id]);
-                navigateTo('accounts');
+                handleBack();
               }
             })}
             initialData={editingItem}
@@ -348,14 +419,14 @@ function App() {
         return (
           <AddCategoryPage
             onSave={handleSaveCategory}
-            onBack={() => navigateTo('categories')}
+            onBack={handleBack}
             onDelete={(id) => showConfirmation({
               title: 'Delete Category?',
               message: 'Are you sure?',
               confirmText: 'Delete',
               onConfirm: async () => {
                 await performDeleteCategories([id]);
-                navigateTo('categories');
+                handleBack();
               }
             })}
             initialData={editingItem}
@@ -365,7 +436,7 @@ function App() {
       case 'adjustment':
         return (
           <AdjustmentPage
-            onBack={() => navigateTo('more')}
+            onBack={handleBack}
             onSave={handleSaveAdjustment}
             accounts={accounts}
             currentBalances={currentBalances}
@@ -397,7 +468,7 @@ function App() {
         {['home', 'transactions', 'monthly-summary', 'more'].includes(currentPage) && (
           <BottomNav
             currentPage={currentPage}
-            onNavigate={navigateTo}
+            onNavigate={handleBottomNav}
             onAddTransaction={() => navigateTo('add-transaction')}
           />
         )}
