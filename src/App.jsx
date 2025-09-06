@@ -213,7 +213,7 @@ function App() {
       if (data.source) involved.push(data.source);
       if (data.destination) involved.push(data.destination);
     }
-    const finalData = {...data, involvedAccounts: involved };
+    const finalData = { ...data, involvedAccounts: involved };
     const ref = collection(db, 'users', user.uid, 'transactions');
     if (id) await updateDoc(doc(ref, id), finalData); else await addDoc(ref, finalData);
     navigateTo('transactions');

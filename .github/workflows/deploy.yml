@@ -28,6 +28,7 @@ jobs:
           echo "VITE_STORAGE_BUCKET=${{ secrets.VITE_STORAGE_BUCKET }}" >> .env.production
           echo "VITE_MESSAGING_SENDER_ID=${{ secrets.VITE_MESSAGING_SENDER_ID }}" >> .env.production
           echo "VITE_APP_ID=${{ secrets.VITE_APP_ID }}" >> .env.production
+          echo "VITE_SENTRY_DSN=${{ secrets.VITE_SENTRY_DSN }}" >> .env.production
 
       - name: Build Project
         run: npm run build
