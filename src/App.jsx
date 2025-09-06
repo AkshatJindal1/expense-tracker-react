@@ -294,7 +294,6 @@ function App() {
           <MorePage
             onNavigate={navigateTo}
             onSignOut={handleSignOut}
-            onMigrate={migrateTransactions}
           />
         )
       case 'accounts':
