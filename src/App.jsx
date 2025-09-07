@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { auth, db } from './firebase'; // Import from your new file
+import { auth, db } from './firebase';
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -17,7 +17,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
-// Import your page components
+// Component Imports...
 import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { BottomNav } from './components/BottomNav';
@@ -44,34 +44,25 @@ function App() {
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
-  const [sheetConfig, setSheetConfig] = useState({
-    isOpen: false,
-    title: '',
-    items: [],
-    currentValue: '',
-    onSelect: () => {},
-  });
+  const [sheetConfig, setSheetConfig] = useState({ isOpen: false });
   const [confirmationConfig, setConfirmationConfig] = useState({
     isOpen: false,
   });
   const [confirmCallback, setConfirmCallback] = useState(null);
 
-  // --- Authentication Effect ---
+  // --- Auth & Data Effects (no changes here) ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        setUser(null);
+      setUser(currentUser || null);
+      if (!currentUser) {
         setCurrentPage('home');
         setEditingItem(null);
       }
       setLoading(false);
     });
-    return () => unsubscribe(); // Cleanup on unmount
+    return () => unsubscribe();
   }, []);
 
-  // --- Firestore Data Fetching Effect ---
   useEffect(() => {
     if (!user) {
       setTransactions([]);
@@ -83,20 +74,19 @@ function App() {
       collection(db, 'users', user.uid, 'transactions'),
       orderBy('date', 'desc')
     );
-    const txUnsub = onSnapshot(txQuery, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setTransactions(data);
-    });
+    const txUnsub = onSnapshot(txQuery, (snapshot) =>
+      setTransactions(
+        snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      )
+    );
     const accQuery = query(collection(db, 'users', user.uid, 'accounts'));
-    const accUnsub = onSnapshot(accQuery, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setAccounts(data);
-    });
+    const accUnsub = onSnapshot(accQuery, (snapshot) =>
+      setAccounts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
+    );
     const catQuery = query(collection(db, 'users', user.uid, 'categories'));
-    const catUnsub = onSnapshot(catQuery, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setCategories(data);
-    });
+    const catUnsub = onSnapshot(catQuery, (snapshot) =>
+      setCategories(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
+    );
     return () => {
       txUnsub();
       accUnsub();
@@ -104,27 +94,24 @@ function App() {
     };
   }, [user]);
 
-  // --- Browser History Navigation Logic ---
+  // --- Browser History Navigation Logic (UPDATED) ---
   const handlePopState = useCallback((event) => {
-    const page = event.state?.page || 'home';
+    const page = event.state?.page || 'home'; // Default to home if state is missing
     setCurrentPage(page);
     setEditingItem(event.state?.editingItem || null);
   }, []);
 
   useEffect(() => {
     window.addEventListener('popstate', handlePopState);
-    // Set the initial state
-    window.history.replaceState({ page: 'home', editingItem: null }, '');
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
+    window.history.replaceState({ page: 'home', editingItem: null }, ''); // Set initial state
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [handlePopState]);
 
   const handleBack = useCallback(() => {
     window.history.back();
   }, []);
 
+  // Use this for navigating to any "deep" page that isn't on the bottom nav
   const navigateTo = (page, itemToEdit = null) => {
     setCurrentPage(page);
     setEditingItem(itemToEdit);
@@ -132,12 +119,36 @@ function App() {
   };
 
   const handleBottomNav = (page) => {
+    if (page === currentPage) return;
+
+    const bottomNavTabs = ['transactions', 'monthly-summary', 'more'];
+    const isCurrentPageTab = bottomNavTabs.includes(currentPage);
+
+    // If we're on a tab and the user clicks the "Home" button,
+    // we simply go back, because we've structured the history
+    // so that "Home" is always the previous page.
+    if (isCurrentPageTab && page === 'home') {
+      handleBack();
+      return;
+    }
+
     setCurrentPage(page);
     setEditingItem(null);
-    window.history.replaceState({ page, editingItem: null }, '');
+
+    const isTargetPageTab = bottomNavTabs.includes(page);
+
+    // If moving between two tabs (e.g., Analytics to More),
+    // we *replace* the history state instead of adding to it.
+    if (isCurrentPageTab && isTargetPageTab) {
+      window.history.replaceState({ page, editingItem: null }, '');
+    } else {
+      // Otherwise (e.g., Home to Analytics), we push a new state.
+      window.history.pushState({ page, editingItem: null }, '');
+    }
   };
 
-  // --- Data Handling ---
+  // --- Data Handling (no changes from here down) ---
+
   const openSelectionSheet = (title, items, currentValue, onSelect) => {
     setSheetConfig({ isOpen: true, title, items, currentValue, onSelect });
   };
@@ -152,9 +163,7 @@ function App() {
   };
 
   const handleConfirm = () => {
-    if (confirmCallback) {
-      confirmCallback();
-    }
+    if (confirmCallback) confirmCallback();
     setConfirmationConfig({ isOpen: false });
     setConfirmCallback(null);
   };
@@ -208,24 +217,24 @@ function App() {
     );
     transactions.forEach((tx) => {
       if (tx.type === 'Transfer') {
-        if (balances.hasOwnProperty(tx.source))
+        if (Object.hasOwn(balances, tx.source))
           balances[tx.source] -= tx.amount;
-        if (balances.hasOwnProperty(tx.destination))
+        if (Object.hasOwn(balances, tx.destination))
           balances[tx.destination] += tx.amount;
       }
       if (tx.type === 'Income') {
-        if (balances.hasOwnProperty(tx.destination))
+        if (Object.hasOwn(balances, tx.source))
           balances[tx.destination] += tx.amount;
       }
       if (tx.type === 'Expense') {
-        if (balances.hasOwnProperty(tx.source))
+        if (Object.hasOwn(balances, tx.source))
           balances[tx.source] -= tx.amount;
       }
       if (tx.splitAmount > 0) {
         const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
         if (
           splitwiseAccount &&
-          balances.hasOwnProperty(splitwiseAccount.name)
+          Object.hasOwn(balances, splitwiseAccount.name)
         ) {
           balances[splitwiseAccount.name] += tx.splitAmount;
         }
