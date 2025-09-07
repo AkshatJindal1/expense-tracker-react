@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { auth, db } from './firebase'; // Import from your new file
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -23,9 +23,8 @@ import { Spinner } from './components/Spinner';
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('home'); // For navigation
-  const [pageHistory, setPageHistory] = useState(['home']); // Navigation history stack.
-
+  const [currentPage, setCurrentPage] = useState('home');
+  
   // Data states
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -49,7 +48,6 @@ function App() {
       } else {
         setUser(null);
         setCurrentPage('home');
-        setPageHistory(['home']);
         setEditingItem(null);
       }
       setLoading(false);
@@ -65,115 +63,73 @@ function App() {
       setCategories([]);
       return;
     }
-    // Listeners for transactions.
     const txQuery = query(collection(db, 'users', user.uid, 'transactions'), orderBy('date', 'desc'));
     const txUnsub = onSnapshot(txQuery, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setTransactions(data);
     });
-
-    // Listener for Accounts
     const accQuery = query(collection(db, 'users', user.uid, 'accounts'));
     const accUnsub = onSnapshot(accQuery, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAccounts(data);
     });
-
-    // Listener for Categories
     const catQuery = query(collection(db, 'users', user.uid, 'categories'));
     const catUnsub = onSnapshot(catQuery, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCategories(data);
     });
-    // Return a cleanup function to unsubscribe when the user logs out
     return () => {
       txUnsub();
       accUnsub();
       catUnsub();
     };
-  }, [user]); // This effect re-runs when the user state changes
+  }, [user]);
 
-  // --- Navigation Logic ---
+  // --- Browser History Navigation Logic ---
+  const handlePopState = useCallback((event) => {
+    const page = event.state?.page || 'home';
+    setCurrentPage(page);
+    setEditingItem(event.state?.editingItem || null);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('popstate', handlePopState);
+    // Set the initial state
+    window.history.replaceState({ page: 'home', editingItem: null }, '');
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [handlePopState]);
+  
   const handleBack = useCallback(() => {
-    setPageHistory(prev => {
-      if (prev.length <= 1) {
-        // If on a root page (like 'home'), do nothing. This prevents closing the app.
-        return prev;
-      }
-      const newHistory = prev.slice(0, -1);
-      const previousPage = newHistory[newHistory.length - 1];
-      setCurrentPage(previousPage);
-      setEditingItem(null); // Clear editing item on back navigation
-      return newHistory;
-    });
+    window.history.back();
   }, []);
 
   const navigateTo = (page, itemToEdit = null) => {
+    setCurrentPage(page);
     setEditingItem(itemToEdit);
-    setCurrentPage(page);
-    setPageHistory(prev => {
-      // Avoid pushing duplicates if the user clicks the same navigation item twice
-      if (prev[prev.length - 1] === page) return prev;
-      return [...prev, page];
-    });
+    window.history.pushState({ page, editingItem: itemToEdit }, '');
   };
-
+  
   const handleBottomNav = (page) => {
-    // Bottom nav navigates to root pages, so we reset the history to that page
     setCurrentPage(page);
-    setPageHistory([page]);
     setEditingItem(null);
+    window.history.replaceState({ page, editingItem: null }, '');
   };
 
-  // --- Swipe Gesture Handling ---
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const swipeThreshold = 75; // Minimum distance for a swipe to be registered
-
-  const handleTouchStart = (e) => {
-    // Don't register swipe if it's on an input, button, or slider
-    const target = e.target;
-    if (target.closest('input, button, [role="button"]')) {
-      touchStartX.current = 0;
-      return;
-    }
-    touchStartX.current = e.targetTouches[0].clientX;
-    touchEndX.current = 0; // Reset end position
-  };
-
-  const handleTouchMove = (e) => {
-    if (touchStartX.current === 0) return;
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    if (touchStartX.current === 0 || touchEndX.current === 0) return;
-    const swipedDistance = touchEndX.current - touchStartX.current;
-
-    // Swipe Right (triggers back navigation)
-    if (swipedDistance > swipeThreshold) {
-      handleBack();
-    }
-
-    // Reset values for the next touch
-    touchStartX.current = 0;
-    touchEndX.current = 0;
-  };
-
-  // Handler function to open the sheet
-  // Child components will call this function to trigger the modal.
+  // --- Data Handling ---
   const openSelectionSheet = (title, items, currentValue, onSelect) => {
     setSheetConfig({ isOpen: true, title, items, currentValue, onSelect });
   };
 
-  // Handler to close the sheet
   const closeSelectionSheet = () => {
     setSheetConfig({ isOpen: false })
   };
 
   const showConfirmation = ({ title, message, confirmText, onConfirm }) => {
     setConfirmationConfig({ isOpen: true, title, message, confirmText });
-    setConfirmCallback(() => onConfirm); // Store the confirm action
+    setConfirmCallback(() => onConfirm);
   };
 
   const handleConfirm = () => {
@@ -189,7 +145,6 @@ function App() {
     setConfirmCallback(null);
   };
 
-  // Function to handle saving accounts.
   const handleSaveAccount = async (accountData) => {
     const { id, ...data } = accountData;
     const collectionRef = collection(db, 'users', user.uid, 'accounts');
@@ -201,15 +156,11 @@ function App() {
     handleBack();
   };
 
-  // Function to handle delete accounts.
   const performDeleteAccounts = async (ids) => {
     const promises = ids.map(id => deleteDoc(doc(db, 'users', user.uid, 'accounts', id)));
     await Promise.all(promises);
   };
 
-
-
-  // Function to handle save categories.
   const handleSaveCategory = async (categoryData) => {
     const { id, ...data } = categoryData;
     const collectionRef = collection(db, 'users', user.uid, 'categories');
@@ -221,17 +172,14 @@ function App() {
     handleBack();
   };
 
-  // Function to handle delete categories.
   const performDeleteCategories = async (ids) => {
     const promises = ids.map(id => deleteDoc(doc(db, 'users', user.uid, 'categories', id)));
     await Promise.all(promises);
   };
-
+  
   const currentBalances = useMemo(() => {
     if (!accounts || accounts.length === 0) return {};
-
     const balances = accounts.reduce((acc, account) => ({ ...acc, [account.name]: 0 }), {});
-
     transactions.forEach((tx) => {
       if (tx.type === "Transfer") {
         if (balances.hasOwnProperty(tx.source)) balances[tx.source] -= tx.amount;
@@ -244,9 +192,7 @@ function App() {
         if (balances.hasOwnProperty(tx.source)) balances[tx.source] -= tx.amount;
       }
       if (tx.splitAmount > 0) {
-        const splitwiseAccount = accounts.find(
-          (a) => a.type === "Splitwise"
-        );
+        const splitwiseAccount = accounts.find((a) => a.type === "Splitwise");
         if (splitwiseAccount && balances.hasOwnProperty(splitwiseAccount.name)) {
           balances[splitwiseAccount.name] += tx.splitAmount;
         }
@@ -267,7 +213,6 @@ function App() {
     return <Spinner />;
   }
 
-  // Function to handle saving a new transaction
   const handleSaveTransaction = async (transactionData) => {
     const { id, ...data } = transactionData;
     const involved = [];
@@ -280,13 +225,11 @@ function App() {
     const finalData = { ...data, involvedAccounts: involved };
     const ref = collection(db, 'users', user.uid, 'transactions');
     if (id) {
-      await updateDoc(doc(ref, id), finalData);
-      handleBack();
+        await updateDoc(doc(ref, id), finalData);
+        handleBack();
     } else {
-      await addDoc(ref, finalData);
-      // Reset history to the transactions list for a clean navigation stack
-      setCurrentPage('transactions');
-      setPageHistory(['transactions']);
+        await addDoc(ref, finalData);
+        handleBottomNav('transactions');
     }
   };
 
@@ -294,10 +237,8 @@ function App() {
     await Promise.all(ids.map(id => deleteDoc(doc(db, 'users', user.uid, 'transactions', id))));
   };
 
-  // Handler function to save the adjustment transaction
   const handleSaveAdjustment = async (accountName, difference) => {
     if (!user) return;
-
     const adjTx = {
       type: difference > 0 ? "Income" : "Expense",
       amount: Math.abs(difference),
@@ -306,10 +247,9 @@ function App() {
       destination: difference > 0 ? accountName : null,
       notes: `Balance adjustment for ${accountName}.`,
       splitAmount: 0,
-      date: new Date(), // Use serverTimestamp() in production
+      date: new Date(),
       involvedAccounts: [accountName],
     };
-
     try {
       await addDoc(collection(db, 'users', user.uid, 'transactions'), adjTx);
       handleBack();
@@ -339,120 +279,24 @@ function App() {
           />
         );
       case 'transactions':
-        return (
-          <AllTransactionsPage
-            user={user}
-            db={db}
-            onEdit={(item) => navigateTo('add-transaction', item)}
-            onDelete={(ids) => showConfirmation({
-              title: `Delete ${ids.length} Transaction(s)?`, message: 'This cannot be undone.', confirmText: 'Delete',
-              onConfirm: () => performDeleteTransactions(ids)
-            })}
-            accounts={accounts}
-            onNavigate={navigateTo}
-            openSelectionSheet={openSelectionSheet}
-          />
-        );
+        return <AllTransactionsPage user={user} db={db} onEdit={(item) => navigateTo('add-transaction', item)} onDelete={(ids) => showConfirmation({ title: `Delete ${ids.length} Transaction(s)?`, message: 'This cannot be undone.', confirmText: 'Delete', onConfirm: () => performDeleteTransactions(ids) })} accounts={accounts} onNavigate={navigateTo} openSelectionSheet={openSelectionSheet} />;
       case 'monthly-summary':
-        return (
-          <AnalyticsPage
-            transactions={transactions}
-            onBack={handleBack}
-          />
-        );
+        return <AnalyticsPage transactions={transactions} onBack={handleBack} />;
       case 'more':
-        return (
-          <MorePage
-            onNavigate={navigateTo}
-            onSignOut={handleSignOut}
-          />
-        )
+        return <MorePage onNavigate={navigateTo} onSignOut={handleSignOut} />;
       case 'accounts':
-        return (
-          <AccountsPage
-            accounts={accounts}
-            onBack={handleBack}
-            onAddNew={() => navigateTo('add-account')}
-            onEdit={(item) => navigateTo('add-account', item)}
-            onDelete={(ids) => showConfirmation({
-              title: `Delete ${ids.length} Account(s)?`,
-              message: 'This may affect existing transactions. This action cannot be undone.',
-              confirmText: 'Delete',
-              onConfirm: () => performDeleteAccounts(ids)
-            })}
-          />
-        )
+        return <AccountsPage accounts={accounts} onBack={handleBack} onAddNew={() => navigateTo('add-account')} onEdit={(item) => navigateTo('add-account', item)} onDelete={(ids) => showConfirmation({ title: `Delete ${ids.length} Account(s)?`, message: 'This may affect existing transactions. This action cannot be undone.', confirmText: 'Delete', onConfirm: () => performDeleteAccounts(ids) })} />;
       case 'categories':
-        return (
-          <CategoriesPage
-            categories={categories}
-            onBack={handleBack}
-            onAddNew={() => navigateTo('add-category')}
-            onEdit={(item) => navigateTo('add-category', item)}
-            onDelete={(ids) => showConfirmation({
-              title: `Delete ${ids.length} Category(s)?`,
-              message: 'This will not delete existing transactions with this category. Are you sure?',
-              confirmText: 'Delete',
-              onConfirm: () => performDeleteCategories(ids)
-            })}
-          />
-        )
+        return <CategoriesPage categories={categories} onBack={handleBack} onAddNew={() => navigateTo('add-category')} onEdit={(item) => navigateTo('add-category', item)} onDelete={(ids) => showConfirmation({ title: `Delete ${ids.length} Category(s)?`, message: 'This will not delete existing transactions with this category. Are you sure?', confirmText: 'Delete', onConfirm: () => performDeleteCategories(ids) })} />;
       case 'add-account':
-        return (
-          <AddAccountPage
-            onSave={handleSaveAccount}
-            onBack={handleBack}
-            onDelete={(id) => showConfirmation({
-              title: 'Delete Account?',
-              message: 'Are you sure you want to delete this account? This action cannot be undone.',
-              confirmText: 'Delete',
-              onConfirm: async () => {
-                await performDeleteAccounts([id]);
-                handleBack();
-              }
-            })}
-            initialData={editingItem}
-            openSelectionSheet={openSelectionSheet}
-          />
-        )
+        return <AddAccountPage onSave={handleSaveAccount} onBack={handleBack} onDelete={(id) => showConfirmation({ title: 'Delete Account?', message: 'Are you sure you want to delete this account? This action cannot be undone.', confirmText: 'Delete', onConfirm: async () => { await performDeleteAccounts([id]); handleBack(); }})} initialData={editingItem} openSelectionSheet={openSelectionSheet} />;
       case 'add-category':
-        return (
-          <AddCategoryPage
-            onSave={handleSaveCategory}
-            onBack={handleBack}
-            onDelete={(id) => showConfirmation({
-              title: 'Delete Category?',
-              message: 'Are you sure?',
-              confirmText: 'Delete',
-              onConfirm: async () => {
-                await performDeleteCategories([id]);
-                handleBack();
-              }
-            })}
-            initialData={editingItem}
-            openSelectionSheet={openSelectionSheet}
-          />
-        )
+        return <AddCategoryPage onSave={handleSaveCategory} onBack={handleBack} onDelete={(id) => showConfirmation({ title: 'Delete Category?', message: 'Are you sure?', confirmText: 'Delete', onConfirm: async () => { await performDeleteCategories([id]); handleBack(); }})} initialData={editingItem} openSelectionSheet={openSelectionSheet} />;
       case 'adjustment':
-        return (
-          <AdjustmentPage
-            onBack={handleBack}
-            onSave={handleSaveAdjustment}
-            accounts={accounts}
-            currentBalances={currentBalances}
-            openSelectionSheet={openSelectionSheet}
-          />
-        )
+        return <AdjustmentPage onBack={handleBack} onSave={handleSaveAdjustment} accounts={accounts} currentBalances={currentBalances} openSelectionSheet={openSelectionSheet} />;
       case 'home':
       default:
-        return (
-          <HomePage
-            user={user}
-            transactions={transactions}
-            accounts={accounts}
-            onNavigate={navigateTo}
-          />
-        );
+        return <HomePage user={user} transactions={transactions} accounts={accounts} onNavigate={navigateTo} />;
     }
   };
 
@@ -461,10 +305,9 @@ function App() {
   }
 
   return (
-    <>
+    <div>
       <div className="pb-20">
         {renderPage()}
-        {/* Only show the nav bar on certain pages */}
         {['home', 'transactions', 'monthly-summary', 'more'].includes(currentPage) && (
           <BottomNav
             currentPage={currentPage}
@@ -473,17 +316,11 @@ function App() {
           />
         )}
       </div>
-      <SelectionSheet
-        config={sheetConfig}
-        onClose={closeSelectionSheet}
-      />
-      <ConfirmationModal
-        config={confirmationConfig}
-        onConfirm={handleConfirm}
-        onCancel={handleCancelConfirm}
-      />
-    </>
+      <SelectionSheet config={sheetConfig} onClose={closeSelectionSheet} />
+      <ConfirmationModal config={confirmationConfig} onConfirm={handleConfirm} onCancel={handleCancelConfirm} />
+    </div>
   );
 }
 
 export default App;
+
