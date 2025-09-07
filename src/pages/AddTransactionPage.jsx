@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AmountInput } from '../components/forms/AmountInput';
 import { DateTimeInputs } from '../components/forms/DatetimeInput';
 import { FormRow } from '../components/forms/FormRow';
@@ -8,15 +9,15 @@ export const AddTransactionPage = ({
   onBack,
   onSave,
   onDelete,
-  initialData,
   accounts,
   categories,
   openSelectionSheet,
 }) => {
+  const location = useLocation();
+  const initialData = location.state?.initialData;
   const isEditing = !!initialData;
-  const [txType, setTxType] = useState('Expense');
 
-  // Form State
+  const [txType, setTxType] = useState('Expense');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [source, setSource] = useState('');
@@ -27,7 +28,6 @@ export const AddTransactionPage = ({
   const [isSplit, setIsSplit] = useState(false);
   const [splitAmount, setSplitAmount] = useState('');
 
-  // Set initial date and time on component mount
   useEffect(() => {
     if (initialData) {
       setTxType(initialData.type || 'Expense');
@@ -61,13 +61,8 @@ export const AddTransactionPage = ({
   }, [initialData]);
 
   const handleTxTypeChange = (newType) => {
-    // Do nothing if the type hasn't changed
     if (newType === txType) return;
-
-    // Set the new type
     setTxType(newType);
-
-    // Reset all dependent fields
     setCategory('');
     setSource('');
     setDestination('');
@@ -76,9 +71,8 @@ export const AddTransactionPage = ({
   };
 
   const handleSave = () => {
-    // Basic validation
-    if (!amount || !category || !date || !time) {
-      alert('Please fill in all required fields.');
+    if (!amount || !date || !time) {
+      alert('Please fill in Amount, Date, and Time.');
       return;
     }
     if (txType !== 'Income' && !source) {
@@ -101,12 +95,7 @@ export const AddTransactionPage = ({
       notes,
       splitAmount: isSplit ? parseFloat(splitAmount) || 0 : 0,
     };
-
     onSave(transactionData);
-  };
-
-  const handleDelete = () => {
-    onDelete(initialData.id);
   };
 
   const handleCategorySelect = () => {
@@ -114,25 +103,18 @@ export const AddTransactionPage = ({
       .filter((c) => c.transactionType === txType)
       .map((c) => ({ value: c.name }))
       .sort((a, b) => a.value.localeCompare(b.value));
-
-    openSelectionSheet('Select Category', items, category, (value) =>
-      setCategory(value)
-    );
+    openSelectionSheet('Select Category', items, category, setCategory);
   };
 
   const handleAccountSelect = (setter, currentValue) => {
     const items = accounts
       .map((a) => ({ value: a.name, subtext: a.type }))
       .sort((a, b) => a.value.localeCompare(b.value));
-
-    openSelectionSheet('Select Account', items, currentValue, (value) =>
-      setter(value)
-    );
+    openSelectionSheet('Select Account', items, currentValue, setter);
   };
 
   return (
     <div className="page p-4 active text-gray-800 dark:text-gray-200">
-      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center">
           <button onClick={onBack} className="material-symbols-outlined mr-2">
@@ -144,28 +126,30 @@ export const AddTransactionPage = ({
         </div>
         {isEditing && (
           <button
-            onClick={handleDelete}
-            className="text-red-600 ark:text-red-400 material-symbols-outlined"
+            onClick={() => onDelete(initialData.id)}
+            className="text-red-600 dark:text-red-400 material-symbols-outlined"
           >
             delete
           </button>
         )}
       </div>
 
-      {/* Transaction Type Tabs */}
       <div className="flex justify-around border-b border-gray-200 dark:border-slate-700 mb-4">
         {['Expense', 'Income', 'Transfer'].map((type) => (
           <button
             key={type}
             onClick={() => handleTxTypeChange(type)}
-            className={`tx-type-tab flex-1 pb-2 font-normal transition-colors ${txType === type ? 'active text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+            className={`tx-type-tab flex-1 pb-2 font-normal transition-colors ${
+              txType === type
+                ? 'active text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
           >
             {type}
           </button>
         ))}
       </div>
 
-      {/* Form */}
       <div className="space-y-4">
         <AmountInput value={amount} onChange={setAmount} />
 
@@ -220,17 +204,16 @@ export const AddTransactionPage = ({
             ></textarea>
           </div>
         </div>
+        {txType === 'Expense' && (
+          <SplitwiseInput
+            isSplit={isSplit}
+            onToggle={setIsSplit}
+            splitAmount={splitAmount}
+            onAmountChange={setSplitAmount}
+          />
+        )}
       </div>
-      {txType === 'Expense' && (
-        <SplitwiseInput
-          isSplit={isSplit}
-          onToggle={setIsSplit}
-          splitAmount={splitAmount}
-          onAmountChange={setSplitAmount}
-        />
-      )}
 
-      {/* Save Button */}
       <button
         onClick={handleSave}
         className="fab save-fab bg-blue-600 dark:bg-blue-500 text-white"

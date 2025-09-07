@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { auth, db } from './firebase';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { auth, db } from './firebase.js';
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -17,51 +18,51 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
-// Component Imports...
-import { LoginPage } from './pages/LoginPage';
-import { HomePage } from './pages/HomePage';
-import { BottomNav } from './components/BottomNav';
-import { AddTransactionPage } from './pages/AddTransactionPage';
-import { SelectionSheet } from './components/SelectionSheet';
-import { AllTransactionsPage } from './pages/AllTransactionsPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { MorePage } from './pages/MorePage';
-import { AdjustmentPage } from './pages/AdjustmentPage';
-import { AccountsPage } from './pages/AccountsPage';
-import { CategoriesPage } from './pages/CategoriesPage';
-import { AddAccountPage } from './pages/AddAccountPage';
-import { AddCategoryPage } from './pages/AddCategoryPage';
-import { ConfirmationModal } from './components/ConfirmationModal';
-import { Spinner } from './components/Spinner';
+// Component Imports
+import { LoginPage } from './pages/LoginPage.jsx';
+import { HomePage } from './pages/HomePage.jsx';
+import { BottomNav } from './components/BottomNav.jsx';
+import { AddTransactionPage } from './pages/AddTransactionPage.jsx';
+import { SelectionSheet } from './components/SelectionSheet.jsx';
+import { AllTransactionsPage } from './pages/AllTransactionsPage.jsx';
+import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
+import { MorePage } from './pages/MorePage.jsx';
+import { AdjustmentPage } from './pages/AdjustmentPage.jsx';
+import { AccountsPage } from './pages/AccountsPage.jsx';
+import { CategoriesPage } from './pages/CategoriesPage.jsx';
+import { AddAccountPage } from './pages/AddAccountPage.jsx';
+import { AddCategoryPage } from './pages/AddCategoryPage.jsx';
+import { ConfirmationModal } from './components/ConfirmationModal.jsx';
+import { Spinner } from './components/Spinner.jsx';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('home');
 
   // Data states
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [editingItem, setEditingItem] = useState(null);
   const [sheetConfig, setSheetConfig] = useState({ isOpen: false });
   const [confirmationConfig, setConfirmationConfig] = useState({
     isOpen: false,
   });
   const [confirmCallback, setConfirmCallback] = useState(null);
 
-  // --- Auth & Data Effects (no changes here) ---
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- Auth & Data Effects ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser || null);
       if (!currentUser) {
-        setCurrentPage('home');
-        setEditingItem(null);
+        navigate('/'); // Redirect to login page if not authenticated
       }
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (!user) {
@@ -94,60 +95,19 @@ function App() {
     };
   }, [user]);
 
-  // --- Browser History Navigation Logic (UPDATED) ---
-  const handlePopState = useCallback((event) => {
-    const page = event.state?.page || 'home'; // Default to home if state is missing
-    setCurrentPage(page);
-    setEditingItem(event.state?.editingItem || null);
-  }, []);
+  // --- Custom Back Navigation Logic ---
+  const handleBack = () => {
+    const bottomNavPaths = ['/transactions', '/analytics', '/more'];
+    const currentPath = location.pathname;
 
-  useEffect(() => {
-    window.addEventListener('popstate', handlePopState);
-    window.history.replaceState({ page: 'home', editingItem: null }, ''); // Set initial state
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [handlePopState]);
-
-  const handleBack = useCallback(() => {
-    window.history.back();
-  }, []);
-
-  // Use this for navigating to any "deep" page that isn't on the bottom nav
-  const navigateTo = (page, itemToEdit = null) => {
-    setCurrentPage(page);
-    setEditingItem(itemToEdit);
-    window.history.pushState({ page, editingItem: itemToEdit }, '');
-  };
-
-  const handleBottomNav = (page) => {
-    if (page === currentPage) return;
-
-    const bottomNavTabs = ['transactions', 'monthly-summary', 'more'];
-    const isCurrentPageTab = bottomNavTabs.includes(currentPage);
-
-    // If we're on a tab and the user clicks the "Home" button,
-    // we simply go back, because we've structured the history
-    // so that "Home" is always the previous page.
-    if (isCurrentPageTab && page === 'home') {
-      handleBack();
-      return;
-    }
-
-    setCurrentPage(page);
-    setEditingItem(null);
-
-    const isTargetPageTab = bottomNavTabs.includes(page);
-
-    // If moving between two tabs (e.g., Analytics to More),
-    // we *replace* the history state instead of adding to it.
-    if (isCurrentPageTab && isTargetPageTab) {
-      window.history.replaceState({ page, editingItem: null }, '');
+    if (bottomNavPaths.includes(currentPath)) {
+      navigate('/');
     } else {
-      // Otherwise (e.g., Home to Analytics), we push a new state.
-      window.history.pushState({ page, editingItem: null }, '');
+      navigate(-1); // Standard browser back behavior
     }
   };
 
-  // --- Data Handling (no changes from here down) ---
+  // --- Data Handling ---
 
   const openSelectionSheet = (title, items, currentValue, onSelect) => {
     setSheetConfig({ isOpen: true, title, items, currentValue, onSelect });
@@ -221,12 +181,10 @@ function App() {
           balances[tx.source] -= tx.amount;
         if (Object.hasOwn(balances, tx.destination))
           balances[tx.destination] += tx.amount;
-      }
-      if (tx.type === 'Income') {
-        if (Object.hasOwn(balances, tx.source))
+      } else if (tx.type === 'Income') {
+        if (Object.hasOwn(balances, tx.destination))
           balances[tx.destination] += tx.amount;
-      }
-      if (tx.type === 'Expense') {
+      } else if (tx.type === 'Expense') {
         if (Object.hasOwn(balances, tx.source))
           balances[tx.source] -= tx.amount;
       }
@@ -253,10 +211,6 @@ function App() {
     signOut(auth);
   };
 
-  if (loading) {
-    return <Spinner />;
-  }
-
   const handleSaveTransaction = async (transactionData) => {
     const { id, ...data } = transactionData;
     const involved = [];
@@ -274,7 +228,7 @@ function App() {
       handleBack();
     } else {
       await addDoc(ref, finalData);
-      handleBottomNav('transactions');
+      navigate('/transactions');
     }
   };
 
@@ -305,171 +259,192 @@ function App() {
     }
   };
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'add-transaction':
-        return (
-          <AddTransactionPage
-            onSave={handleSaveTransaction}
-            onBack={handleBack}
-            onDelete={(id) =>
-              showConfirmation({
-                title: 'Delete Transaction?',
-                message: 'This cannot be undone.',
-                confirmText: 'Delete',
-                onConfirm: async () => {
-                  await performDeleteTransactions([id]);
-                  handleBack();
-                },
-              })
-            }
-            initialData={editingItem}
-            accounts={accounts}
-            categories={categories}
-            openSelectionSheet={openSelectionSheet}
-          />
-        );
-      case 'transactions':
-        return (
-          <AllTransactionsPage
-            user={user}
-            db={db}
-            onEdit={(item) => navigateTo('add-transaction', item)}
-            onDelete={(ids) =>
-              showConfirmation({
-                title: `Delete ${ids.length} Transaction(s)?`,
-                message: 'This cannot be undone.',
-                confirmText: 'Delete',
-                onConfirm: () => performDeleteTransactions(ids),
-              })
-            }
-            accounts={accounts}
-            onNavigate={navigateTo}
-            openSelectionSheet={openSelectionSheet}
-          />
-        );
-      case 'monthly-summary':
-        return (
-          <AnalyticsPage transactions={transactions} onBack={handleBack} />
-        );
-      case 'more':
-        return <MorePage onNavigate={navigateTo} onSignOut={handleSignOut} />;
-      case 'accounts':
-        return (
-          <AccountsPage
-            accounts={accounts}
-            onBack={handleBack}
-            onAddNew={() => navigateTo('add-account')}
-            onEdit={(item) => navigateTo('add-account', item)}
-            onDelete={(ids) =>
-              showConfirmation({
-                title: `Delete ${ids.length} Account(s)?`,
-                message:
-                  'This may affect existing transactions. This action cannot be undone.',
-                confirmText: 'Delete',
-                onConfirm: () => performDeleteAccounts(ids),
-              })
-            }
-          />
-        );
-      case 'categories':
-        return (
-          <CategoriesPage
-            categories={categories}
-            onBack={handleBack}
-            onAddNew={() => navigateTo('add-category')}
-            onEdit={(item) => navigateTo('add-category', item)}
-            onDelete={(ids) =>
-              showConfirmation({
-                title: `Delete ${ids.length} Category(s)?`,
-                message:
-                  'This will not delete existing transactions with this category. Are you sure?',
-                confirmText: 'Delete',
-                onConfirm: () => performDeleteCategories(ids),
-              })
-            }
-          />
-        );
-      case 'add-account':
-        return (
-          <AddAccountPage
-            onSave={handleSaveAccount}
-            onBack={handleBack}
-            onDelete={(id) =>
-              showConfirmation({
-                title: 'Delete Account?',
-                message:
-                  'Are you sure you want to delete this account? This action cannot be undone.',
-                confirmText: 'Delete',
-                onConfirm: async () => {
-                  await performDeleteAccounts([id]);
-                  handleBack();
-                },
-              })
-            }
-            initialData={editingItem}
-            openSelectionSheet={openSelectionSheet}
-          />
-        );
-      case 'add-category':
-        return (
-          <AddCategoryPage
-            onSave={handleSaveCategory}
-            onBack={handleBack}
-            onDelete={(id) =>
-              showConfirmation({
-                title: 'Delete Category?',
-                message: 'Are you sure?',
-                confirmText: 'Delete',
-                onConfirm: async () => {
-                  await performDeleteCategories([id]);
-                  handleBack();
-                },
-              })
-            }
-            initialData={editingItem}
-            openSelectionSheet={openSelectionSheet}
-          />
-        );
-      case 'adjustment':
-        return (
-          <AdjustmentPage
-            onBack={handleBack}
-            onSave={handleSaveAdjustment}
-            accounts={accounts}
-            currentBalances={currentBalances}
-            openSelectionSheet={openSelectionSheet}
-          />
-        );
-      case 'home':
-      default:
-        return (
-          <HomePage
-            user={user}
-            transactions={transactions}
-            accounts={accounts}
-            onNavigate={navigateTo}
-          />
-        );
-    }
-  };
+  if (loading) {
+    return <Spinner />;
+  }
 
   if (!user) {
     return <LoginPage onSignIn={handleSignIn} />;
   }
 
+  const bottomNavPaths = ['/', '/transactions', '/analytics', '/more'];
+  const showBottomNav = bottomNavPaths.includes(location.pathname);
+
   return (
     <div>
       <div className="pb-20">
-        {renderPage()}
-        {['home', 'transactions', 'monthly-summary', 'more'].includes(
-          currentPage
-        ) && (
-          <BottomNav
-            currentPage={currentPage}
-            onNavigate={handleBottomNav}
-            onAddTransaction={() => navigateTo('add-transaction')}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <HomePage
+                user={user}
+                transactions={transactions}
+                accounts={accounts}
+                onNavigate={(path) => navigate(path)}
+                onEditTxn={(item) =>
+                  navigate('/add-transaction', { state: { initialData: item } })
+                }
+              />
+            }
           />
+          <Route
+            path="/add-transaction"
+            element={
+              <AddTransactionPage
+                onSave={handleSaveTransaction}
+                onBack={handleBack}
+                onDelete={(id) =>
+                  showConfirmation({
+                    title: 'Delete Transaction?',
+                    message: 'This cannot be undone.',
+                    confirmText: 'Delete',
+                    onConfirm: async () => {
+                      await performDeleteTransactions([id]);
+                      handleBack();
+                    },
+                  })
+                }
+                accounts={accounts}
+                categories={categories}
+                openSelectionSheet={openSelectionSheet}
+              />
+            }
+          />
+          <Route
+            path="/transactions"
+            element={
+              <AllTransactionsPage
+                user={user}
+                db={db}
+                onEdit={(item) =>
+                  navigate('/add-transaction', { state: { initialData: item } })
+                }
+                onDelete={(ids) =>
+                  showConfirmation({
+                    title: `Delete ${ids.length} Transaction(s)?`,
+                    message: 'This cannot be undone.',
+                    confirmText: 'Delete',
+                    onConfirm: () => performDeleteTransactions(ids),
+                  })
+                }
+                accounts={accounts}
+                openSelectionSheet={openSelectionSheet}
+              />
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <AnalyticsPage transactions={transactions} onBack={handleBack} />
+            }
+          />
+          <Route
+            path="/more"
+            element={<MorePage onSignOut={handleSignOut} />}
+          />
+          <Route
+            path="/accounts"
+            element={
+              <AccountsPage
+                accounts={accounts}
+                onBack={handleBack}
+                onAddNew={() => navigate('/add-account')}
+                onEdit={(item) =>
+                  navigate('/add-account', { state: { initialData: item } })
+                }
+                onDelete={(ids) =>
+                  showConfirmation({
+                    title: `Delete ${ids.length} Account(s)?`,
+                    message:
+                      'This may affect existing transactions. This action cannot be undone.',
+                    confirmText: 'Delete',
+                    onConfirm: () => performDeleteAccounts(ids),
+                  })
+                }
+              />
+            }
+          />
+          <Route
+            path="/add-account"
+            element={
+              <AddAccountPage
+                onSave={handleSaveAccount}
+                onBack={handleBack}
+                onDelete={(id) =>
+                  showConfirmation({
+                    title: 'Delete Account?',
+                    message:
+                      'Are you sure you want to delete this account? This action cannot be undone.',
+                    confirmText: 'Delete',
+                    onConfirm: async () => {
+                      await performDeleteAccounts([id]);
+                      handleBack();
+                    },
+                  })
+                }
+                openSelectionSheet={openSelectionSheet}
+              />
+            }
+          />
+          <Route
+            path="/categories"
+            element={
+              <CategoriesPage
+                categories={categories}
+                onBack={handleBack}
+                onAddNew={() => navigate('/add-category')}
+                onEdit={(item) =>
+                  navigate('/add-category', { state: { initialData: item } })
+                }
+                onDelete={(ids) =>
+                  showConfirmation({
+                    title: `Delete ${ids.length} Category(s)?`,
+                    message:
+                      'This will not delete existing transactions with this category. Are you sure?',
+                    confirmText: 'Delete',
+                    onConfirm: () => performDeleteCategories(ids),
+                  })
+                }
+              />
+            }
+          />
+          <Route
+            path="/add-category"
+            element={
+              <AddCategoryPage
+                onSave={handleSaveCategory}
+                onBack={handleBack}
+                onDelete={(id) =>
+                  showConfirmation({
+                    title: 'Delete Category?',
+                    message: 'Are you sure?',
+                    confirmText: 'Delete',
+                    onConfirm: async () => {
+                      await performDeleteCategories([id]);
+                      handleBack();
+                    },
+                  })
+                }
+                openSelectionSheet={openSelectionSheet}
+              />
+            }
+          />
+          <Route
+            path="/adjustment"
+            element={
+              <AdjustmentPage
+                onBack={handleBack}
+                onSave={handleSaveAdjustment}
+                accounts={accounts}
+                currentBalances={currentBalances}
+                openSelectionSheet={openSelectionSheet}
+              />
+            }
+          />
+        </Routes>
+        {showBottomNav && (
+          <BottomNav onAddTransaction={() => navigate('/add-transaction')} />
         )}
       </div>
       <SelectionSheet config={sheetConfig} onClose={closeSelectionSheet} />

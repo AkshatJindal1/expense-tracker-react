@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export const AddCategoryPage = ({
   onSave,
   onBack,
   onDelete,
-  initialData,
   openSelectionSheet,
-  showConfirmation,
 }) => {
+  const location = useLocation();
+  const initialData = location.state?.initialData;
   const isEditing = !!initialData;
+
   const [name, setName] = useState(initialData?.name || '');
   const [transactionType, setTransactionType] = useState(
     initialData?.transactionType || ''
@@ -20,10 +22,6 @@ export const AddCategoryPage = ({
       return;
     }
     onSave({ id: initialData?.id, name, transactionType });
-  };
-
-  const handleDelete = () => {
-    onDelete(initialData.id);
   };
 
   return (
@@ -39,7 +37,7 @@ export const AddCategoryPage = ({
         </div>
         {isEditing && (
           <button
-            onClick={handleDelete}
+            onClick={() => onDelete(initialData.id)}
             className="text-red-600 dark:text-red-400 material-symbols-outlined"
           >
             delete

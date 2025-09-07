@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 import './index.css';
 import App from './App.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
+import { BrowserRouter } from 'react-router-dom';
 
 // Initialize Sentry for logs.
 Sentry.init({
@@ -20,7 +21,9 @@ Sentry.init({
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </ThemeProvider>
   </StrictMode>
 );

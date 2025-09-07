@@ -1,7 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { TransactionCard } from '../components/TransactionCard';
 
-export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
+export const HomePage = ({
+  user,
+  transactions,
+  accounts,
+  onNavigate,
+  onEditTxn,
+}) => {
   const [expandedSummary, setExpandedSummary] = useState(null); // 'Income', 'Spending', or null
   const [expandedBalances, setExpandedBalances] = useState({}); // e.g., { 'Bank': true }
 
@@ -75,24 +81,24 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
 
     transactions.forEach((tx) => {
       if (tx.type === 'Transfer') {
-        if (balances.hasOwnProperty(tx.source))
+        if (Object.hasOwn(balances, tx.source))
           balances[tx.source] -= tx.amount;
-        if (balances.hasOwnProperty(tx.destination))
+        if (Object.hasOwn(balances, tx.destination))
           balances[tx.destination] += tx.amount;
       }
       if (tx.type === 'Income') {
-        if (balances.hasOwnProperty(tx.destination))
+        if (Object.hasOwn(balances, tx.destination))
           balances[tx.destination] += tx.amount;
       }
       if (tx.type === 'Expense') {
-        if (balances.hasOwnProperty(tx.source))
+        if (Object.hasOwn(balances, tx.source))
           balances[tx.source] -= tx.amount;
       }
       if (tx.splitAmount > 0) {
         const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
         if (
           splitwiseAccount &&
-          balances.hasOwnProperty(splitwiseAccount.name)
+          Object.hasOwn(balances, splitwiseAccount.name)
         ) {
           balances[splitwiseAccount.name] += tx.splitAmount;
         }
@@ -339,7 +345,11 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
         <div className="space-y-3">
           {recentTransactions.length > 0 ? (
             recentTransactions.map((tx) => (
-              <TransactionCard key={tx.id} transaction={tx} />
+              <TransactionCard
+                key={tx.id}
+                transaction={tx}
+                onClick={onEditTxn}
+              />
             ))
           ) : (
             <p className="text-center text-gray-500 dark:text-gray-400 py-4">

@@ -1,28 +1,25 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export const AddAccountPage = ({
   onSave,
   onBack,
   onDelete,
-  initialData,
   openSelectionSheet,
-  showConfirmation,
 }) => {
+  const location = useLocation();
+  const initialData = location.state?.initialData;
   const isEditing = !!initialData;
+
   const [name, setName] = useState(initialData?.name || '');
   const [type, setType] = useState(initialData?.type || '');
 
   const handleSave = () => {
     if (!name || !type) {
-      // In a real app, you'd use a snackbar for errors
       console.error('Please fill all fields.');
       return;
     }
     onSave({ id: initialData?.id, name, type });
-  };
-
-  const handleDelete = () => {
-    onDelete(initialData.id);
   };
 
   return (
@@ -38,7 +35,7 @@ export const AddAccountPage = ({
         </div>
         {isEditing && (
           <button
-            onClick={handleDelete}
+            onClick={() => onDelete(initialData.id)}
             className="text-red-600 dark:text-red-400 material-symbols-outlined"
           >
             delete

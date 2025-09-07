@@ -1,10 +1,13 @@
 import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 
-const NavButton = ({ icon, label, page, currentPage, onNavigate }) => {
-  const isActive = currentPage === page;
+const NavButton = ({ icon, label, to }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+
   return (
-    <button
-      onClick={() => onNavigate(page)}
+    <NavLink
+      to={to}
       className={`nav-btn flex-1 py-3 text-center transition-colors ${
         isActive
           ? 'text-blue-600 dark:text-blue-400'
@@ -13,30 +16,22 @@ const NavButton = ({ icon, label, page, currentPage, onNavigate }) => {
     >
       <span className="material-symbols-outlined">{icon}</span>
       <span className="block text-xs">{label}</span>
-    </button>
+    </NavLink>
   );
 };
 
-export const BottomNav = ({ currentPage, onNavigate, onAddTransaction }) => {
+export const BottomNav = ({ onAddTransaction }) => {
   const navItems = [
-    { icon: 'home', label: 'Home', page: 'home' },
-    { icon: 'receipt_long', label: 'History', page: 'transactions' },
-    { icon: 'analytics', label: 'Analytics', page: 'monthly-summary' },
-    { icon: 'more_horiz', label: 'More', page: 'more' },
+    { icon: 'home', label: 'Home', to: '/' },
+    { icon: 'receipt_long', label: 'History', to: '/transactions' },
+    { icon: 'analytics', label: 'Analytics', to: '/analytics' },
+    { icon: 'more_horiz', label: 'More', to: '/more' },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 dark:bg-slate-800 dark:border-slate-700 flex justify-around max-w-lg mx-auto">
-      <NavButton
-        {...navItems[0]}
-        currentPage={currentPage}
-        onNavigate={onNavigate}
-      />
-      <NavButton
-        {...navItems[1]}
-        currentPage={currentPage}
-        onNavigate={onNavigate}
-      />
+      <NavButton {...navItems[0]} />
+      <NavButton {...navItems[1]} />
 
       {/* Floating Action Button for adding a new transaction */}
       <div className="w-16 h-16 flex justify-center items-center">
@@ -48,16 +43,8 @@ export const BottomNav = ({ currentPage, onNavigate, onAddTransaction }) => {
         </button>
       </div>
 
-      <NavButton
-        {...navItems[2]}
-        currentPage={currentPage}
-        onNavigate={onNavigate}
-      />
-      <NavButton
-        {...navItems[3]}
-        currentPage={currentPage}
-        onNavigate={onNavigate}
-      />
+      <NavButton {...navItems[2]} />
+      <NavButton {...navItems[3]} />
     </nav>
   );
 };
