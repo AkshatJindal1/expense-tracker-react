@@ -8,7 +8,10 @@ const applyThemePreference = (theme) => {
   root.classList.remove('light', 'dark');
 
   if (theme === 'system') {
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
+      .matches
+      ? 'dark'
+      : 'light';
     root.classList.add(systemTheme);
   } else {
     root.classList.add(theme);
@@ -16,7 +19,9 @@ const applyThemePreference = (theme) => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setThemeState] = useState(() => localStorage.getItem('theme') || 'system');
+  const [theme, setThemeState] = useState(
+    () => localStorage.getItem('theme') || 'system'
+  );
 
   useEffect(() => {
     applyThemePreference(theme);
@@ -67,7 +72,11 @@ export const useTheme = () => {
   useEffect(() => {
     const resolveAndSetTheme = () => {
       if (theme === 'system') {
-        setResolvedTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setResolvedTheme(
+          window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light'
+        );
       } else {
         setResolvedTheme(theme);
       }
@@ -79,9 +88,7 @@ export const useTheme = () => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     mediaQuery.addEventListener('change', resolveAndSetTheme);
     return () => mediaQuery.removeEventListener('change', resolveAndSetTheme);
-
   }, [theme]);
 
   return { theme, setTheme, resolvedTheme };
 };
-

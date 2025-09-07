@@ -1,10 +1,17 @@
 import React from 'react';
 
-export const SplitwiseInput = ({ isSplit, onToggle, splitAmount, onAmountChange }) => {
+export const SplitwiseInput = ({
+  isSplit,
+  onToggle,
+  splitAmount,
+  onAmountChange,
+}) => {
   return (
     <>
       <div className="flex items-center justify-between p-2">
-        <span className="text-sm text-gray-800 dark:text-gray-200">Add to Splitwise</span>
+        <span className="text-sm text-gray-800 dark:text-gray-200">
+          Add to Splitwise
+        </span>
         <label className="m3-switch">
           <input
             type="checkbox"

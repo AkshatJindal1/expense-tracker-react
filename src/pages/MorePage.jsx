@@ -10,7 +10,9 @@ export const MorePage = ({ onNavigate, onSignOut }) => {
           onClick={() => onNavigate('accounts')}
           className="w-full text-left bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm flex items-center"
         >
-          <span className="material-symbols-outlined mr-3">account_balance_wallet</span>
+          <span className="material-symbols-outlined mr-3">
+            account_balance_wallet
+          </span>
           Manage Accounts
         </button>
         <button
@@ -27,7 +29,7 @@ export const MorePage = ({ onNavigate, onSignOut }) => {
           <span className="material-symbols-outlined mr-3">tune</span>
           Adjust Balances
         </button>
-        
+
         <ThemeToggle />
 
         <button

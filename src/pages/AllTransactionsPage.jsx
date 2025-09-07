@@ -1,12 +1,27 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, where, limit, getDocs, startAfter } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  orderBy,
+  where,
+  limit,
+  getDocs,
+  startAfter,
+} from 'firebase/firestore';
 import { TransactionCard } from '../components/TransactionCard';
 import { FilterSheet } from '../components/FilterSheet';
 import { Spinner } from '../components/Spinner.jsx';
 
 const PAGE_SIZE = 25;
 
-export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, openSelectionSheet }) => {
+export const AllTransactionsPage = ({
+  user,
+  db,
+  onEdit,
+  onDelete,
+  accounts,
+  openSelectionSheet,
+}) => {
   const [transactions, setTransactions] = useState([]);
   const [lastVisible, setLastVisible] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,83 +40,101 @@ export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, open
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const buildQuery = useCallback((startAfterDoc = null) => {
-    const transactionsRef = collection(db, 'users', user.uid, 'transactions');
-    let q = query(transactionsRef, orderBy(sort.by, sort.order));
+  const buildQuery = useCallback(
+    (startAfterDoc = null) => {
+      const transactionsRef = collection(db, 'users', user.uid, 'transactions');
+      let q = query(transactionsRef, orderBy(sort.by, sort.order));
 
-    if (filters.startDate) {
-      q = query(q, where('date', '>=', new Date(filters.startDate)));
-    }
-    if (filters.endDate) {
-      // Add 1 day to end date to make it inclusive
-      const endDate = new Date(filters.endDate);
-      endDate.setDate(endDate.getDate() + 1);
-      q = query(q, where('date', '<', endDate));
-    }
-    if (filters.type.length > 0) {
-      q = query(q, where('type', 'in', filters.type));
-    }
-    if (filters.account.length > 0) {
-      q = query(q, where('involvedAccounts', 'array-contains-any', filters.account));
-    }
-
-    if (startAfterDoc) {
-      q = query(q, startAfter(startAfterDoc));
-    }
-
-    q = query(q, limit(PAGE_SIZE));
-    return q;
-  }, [db, user.uid, sort, filters]);
-
-  const fetchTransactions = useCallback(async (loadMore = false) => {
-    if (!loadMore) {
-      setLoading(true);
-      setHasMore(true);
-    } else {
-      setLoadingMore(true);
-    }
-
-    const q = buildQuery(loadMore ? lastVisible : null);
-
-    try {
-      const documentSnapshots = await getDocs(q);
-      const newTransactions = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      if (!loadMore) setTransactions(newTransactions);
-      else setTransactions(prev => [...prev, ...newTransactions]);
-
-      const lastDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
-      setLastVisible(lastDoc);
-
-      if (documentSnapshots.docs.length < 25) {
-        setHasMore(false);
+      if (filters.startDate) {
+        q = query(q, where('date', '>=', new Date(filters.startDate)));
       }
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      // Handle the error appropriately in your UI
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [buildQuery, lastVisible]);
+      if (filters.endDate) {
+        // Add 1 day to end date to make it inclusive
+        const endDate = new Date(filters.endDate);
+        endDate.setDate(endDate.getDate() + 1);
+        q = query(q, where('date', '<', endDate));
+      }
+      if (filters.type.length > 0) {
+        q = query(q, where('type', 'in', filters.type));
+      }
+      if (filters.account.length > 0) {
+        q = query(
+          q,
+          where('involvedAccounts', 'array-contains-any', filters.account)
+        );
+      }
+
+      if (startAfterDoc) {
+        q = query(q, startAfter(startAfterDoc));
+      }
+
+      q = query(q, limit(PAGE_SIZE));
+      return q;
+    },
+    [db, user.uid, sort, filters]
+  );
+
+  const fetchTransactions = useCallback(
+    async (loadMore = false) => {
+      if (!loadMore) {
+        setLoading(true);
+        setHasMore(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const q = buildQuery(loadMore ? lastVisible : null);
+
+      try {
+        const documentSnapshots = await getDocs(q);
+        const newTransactions = documentSnapshots.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        if (!loadMore) setTransactions(newTransactions);
+        else setTransactions((prev) => [...prev, ...newTransactions]);
+
+        const lastDoc =
+          documentSnapshots.docs[documentSnapshots.docs.length - 1];
+        setLastVisible(lastDoc);
+
+        if (documentSnapshots.docs.length < 25) {
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        // Handle the error appropriately in your UI
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [buildQuery, lastVisible]
+  );
 
   useEffect(() => {
     fetchTransactions();
   }, [filters, sort]);
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx =>
-      !searchTerm
-      || tx.category?.toLowerCase().includes(searchTerm.toLowerCase())
-      || tx.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+    return transactions.filter(
+      (tx) =>
+        !searchTerm ||
+        tx.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tx.notes?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [transactions, searchTerm]);
 
   const getCurrentSortLabel = () => {
-    if (sort.by === 'date' && sort.order === 'desc') return 'Date (Newest First)';
-    if (sort.by === 'date' && sort.order === 'asc') return 'Date (Oldest First)';
-    if (sort.by === 'amount' && sort.order === 'desc') return 'Amount (High to Low)';
-    if (sort.by === 'amount' && sort.order === 'asc') return 'Amount (Low to High)';
+    if (sort.by === 'date' && sort.order === 'desc')
+      return 'Date (Newest First)';
+    if (sort.by === 'date' && sort.order === 'asc')
+      return 'Date (Oldest First)';
+    if (sort.by === 'amount' && sort.order === 'desc')
+      return 'Amount (High to Low)';
+    if (sort.by === 'amount' && sort.order === 'asc')
+      return 'Amount (Low to High)';
     return '';
   };
 
@@ -113,19 +146,27 @@ export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, open
       { value: 'Amount (Low to High)' },
     ];
     openSelectionSheet('Sort By', items, getCurrentSortLabel(), (value) => {
-      if (value.includes('Date')) setSort({ by: 'date', order: value.includes('Newest') ? 'desc' : 'asc' });
-      if (value.includes('Amount')) setSort({ by: 'amount', order: value.includes('High') ? 'desc' : 'asc' });
+      if (value.includes('Date'))
+        setSort({
+          by: 'date',
+          order: value.includes('Newest') ? 'desc' : 'asc',
+        });
+      if (value.includes('Amount'))
+        setSort({
+          by: 'amount',
+          order: value.includes('High') ? 'desc' : 'asc',
+        });
     });
   };
 
   // Group transactions by date for rendering
   const groupedTransactions = useMemo(() => {
-    if (sort.by !== 'date') return { 'all': filteredTransactions };
+    if (sort.by !== 'date') return { all: filteredTransactions };
 
     return filteredTransactions.reduce((acc, tx) => {
       const dateKey = tx.date.toDate().toLocaleDateString('en-CA'); // YYYY-MM-DD format
       if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(tx)
+      acc[dateKey].push(tx);
       return acc;
     }, {});
   }, [filteredTransactions, sort.by]);
@@ -150,7 +191,7 @@ export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, open
     if (selectedIds.size > 0) {
       onDelete(Array.from(selectedIds));
       // After deletion, we should refetch to get a clean state
-      fetchTransactions();           
+      fetchTransactions();
     }
     toggleSelectionMode();
   };
@@ -163,19 +204,32 @@ export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, open
           <div className="flex items-center justify-between mb-4">
             {isSelecting ? (
               <>
-                <button onClick={toggleSelectionMode} className="material-symbols-outlined">close</button>
+                <button
+                  onClick={toggleSelectionMode}
+                  className="material-symbols-outlined"
+                >
+                  close
+                </button>
                 <span className="font-medium">{selectedIds.size} selected</span>
                 <button
                   onClick={handleDeleteSelected}
                   disabled={selectedIds.size === 0}
-                  className="material-symbols-outlined text-red-600 dark:text-red-400 disabled:text-gray-400 dark:disabled:text-gray-600">delete</button>
+                  className="material-symbols-outlined text-red-600 dark:text-red-400 disabled:text-gray-400 dark:disabled:text-gray-600"
+                >
+                  delete
+                </button>
               </>
             ) : (
               <>
                 <div className="flex items-center">
                   <h1 className="text-2xl font-medium">All Transactions</h1>
                 </div>
-                <button onClick={toggleSelectionMode} className="p-2 material-symbols-outlined">select</button>
+                <button
+                  onClick={toggleSelectionMode}
+                  className="p-2 material-symbols-outlined"
+                >
+                  select
+                </button>
               </>
             )}
           </div>
@@ -183,7 +237,9 @@ export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, open
           {/* Search and Filter Controls */}
           <div className="flex items-center gap-2 mt-4">
             <div className="flex-grow relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">search</span>
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                search
+              </span>
               <input
                 type="text"
                 value={searchTerm}
@@ -192,41 +248,71 @@ export const AllTransactionsPage = ({ user, db, onEdit, onDelete, accounts, open
                 placeholder="Search..."
               />
             </div>
-            <button onClick={() => setIsFilterOpen(true)} className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-              <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">filter_list</span>
+            <button
+              onClick={() => setIsFilterOpen(true)}
+              className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm"
+            >
+              <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">
+                filter_list
+              </span>
             </button>
-            <button onClick={handleSortClick} className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-              <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">sort</span>
+            <button
+              onClick={handleSortClick}
+              className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm"
+            >
+              <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">
+                sort
+              </span>
             </button>
           </div>
         </div>
 
         {/* Transaction List */}
-        {loading ? <Spinner /> : (
-        <div className="space-y-4 px-4 pb-4">
-          {Object.keys(groupedTransactions).length > 0 ? (
-            Object.entries(groupedTransactions).map(([dateKey, txs]) => (
-              <div key={dateKey}>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-4 mb-2">{new Date(dateKey).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
-                <div className="space-y-3">
-                  {txs.map(tx => <TransactionCard key={tx.id} transaction={tx} isSelecting={isSelecting} isSelected={selectedIds.has(tx.id)} onClick={handleCardClick} />)}
+        {loading ? (
+          <Spinner />
+        ) : (
+          <div className="space-y-4 px-4 pb-4">
+            {Object.keys(groupedTransactions).length > 0 ? (
+              Object.entries(groupedTransactions).map(([dateKey, txs]) => (
+                <div key={dateKey}>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-4 mb-2">
+                    {new Date(dateKey).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </h3>
+                  <div className="space-y-3">
+                    {txs.map((tx) => (
+                      <TransactionCard
+                        key={tx.id}
+                        transaction={tx}
+                        isSelecting={isSelecting}
+                        isSelected={selectedIds.has(tx.id)}
+                        onClick={handleCardClick}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No transactions found.</p>
-          )}
-          {hasMore && (
-            <div className="text-center mt-6">
+              ))
+            ) : (
+              <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
+                No transactions found.
+              </p>
+            )}
+            {hasMore && (
+              <div className="text-center mt-6">
                 <button
                   onClick={() => fetchTransactions(true)}
                   disabled={loadingMore}
-                  className="text-blue-600 dark:text-blue-400 font-medium disabled:opacity-50">
+                  className="text-blue-600 dark:text-blue-400 font-medium disabled:opacity-50"
+                >
                   {loadingMore ? 'Loading...' : 'Load More'}
                 </button>
               </div>
-          )}
-        </div>
+            )}
+          </div>
         )}
       </div>
 

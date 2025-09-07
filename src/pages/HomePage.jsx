@@ -14,7 +14,7 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
         daily: { income: 0, expense: 0 },
         weekly: { income: 0, expense: 0 },
         monthly: { income: 0, expense: 0 },
-      }
+      };
     }
 
     const calculateIncomeExpense = (txs) => {
@@ -32,8 +32,16 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
     };
 
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const startOfWeek = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - now.getDay()
+    );
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const dailyTransactions = transactions.filter(
@@ -60,24 +68,32 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
   const accountBalances = useMemo(() => {
     if (!accounts || accounts.length === 0) return {};
 
-    const balances = accounts.reduce((acc, account) => ({ ...acc, [account.name]: 0 }), {});
+    const balances = accounts.reduce(
+      (acc, account) => ({ ...acc, [account.name]: 0 }),
+      {}
+    );
 
     transactions.forEach((tx) => {
-      if (tx.type === "Transfer") {
-        if (balances.hasOwnProperty(tx.source)) balances[tx.source] -= tx.amount;
-        if (balances.hasOwnProperty(tx.destination)) balances[tx.destination] += tx.amount;
+      if (tx.type === 'Transfer') {
+        if (balances.hasOwnProperty(tx.source))
+          balances[tx.source] -= tx.amount;
+        if (balances.hasOwnProperty(tx.destination))
+          balances[tx.destination] += tx.amount;
       }
-      if (tx.type === "Income") {
-        if (balances.hasOwnProperty(tx.destination)) balances[tx.destination] += tx.amount;
+      if (tx.type === 'Income') {
+        if (balances.hasOwnProperty(tx.destination))
+          balances[tx.destination] += tx.amount;
       }
-      if (tx.type === "Expense") {
-        if (balances.hasOwnProperty(tx.source)) balances[tx.source] -= tx.amount;
+      if (tx.type === 'Expense') {
+        if (balances.hasOwnProperty(tx.source))
+          balances[tx.source] -= tx.amount;
       }
       if (tx.splitAmount > 0) {
-        const splitwiseAccount = accounts.find(
-          (a) => a.type === "Splitwise"
-        );
-        if (splitwiseAccount && balances.hasOwnProperty(splitwiseAccount.name)) {
+        const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
+        if (
+          splitwiseAccount &&
+          balances.hasOwnProperty(splitwiseAccount.name)
+        ) {
           balances[splitwiseAccount.name] += tx.splitAmount;
         }
       }
@@ -85,7 +101,7 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
 
     // Group balances by account type
     const grouped = {};
-    accounts.forEach(acc => {
+    accounts.forEach((acc) => {
       if (!grouped[acc.type]) {
         grouped[acc.type] = { total: 0, accounts: [] };
       }
@@ -98,109 +114,206 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
   }, [transactions, accounts]);
 
   const recentTransactions = transactions
-    .filter((tx) => !tx.category.includes("Adjustment"))
+    .filter((tx) => !tx.category.includes('Adjustment'))
     .slice(0, 3);
 
   const accountTypeIcons = {
-    Bank: "account_balance",
-    "Credit Card": "credit_card",
-    Wallet: "account_balance_wallet",
-    Splitwise: "receipt_long",
+    Bank: 'account_balance',
+    'Credit Card': 'credit_card',
+    Wallet: 'account_balance_wallet',
+    Splitwise: 'receipt_long',
   };
 
   return (
     <div className="page p-4 active text-gray-800 dark:text-gray-200 min-h-screen">
       <header className="mb-6">
-        <h1 className="text-2xl font-medium truncate">
-          Hello, {userName}
-        </h1>
+        <h1 className="text-2xl font-medium truncate">Hello, {userName}</h1>
       </header>
 
       {/* Dashboard Summary Section */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm mb-6 space-y-2">
         {/* Income Row */}
-        <div onClick={() => setExpandedSummary(expandedSummary === 'Income' ? null : 'Income')}>
+        <div
+          onClick={() =>
+            setExpandedSummary(expandedSummary === 'Income' ? null : 'Income')
+          }
+        >
           <div className="summary-row flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer">
             <div className="flex items-center">
-              <span className="material-symbols-outlined mr-3 text-green-600 dark:text-green-400">arrow_downward</span>
+              <span className="material-symbols-outlined mr-3 text-green-600 dark:text-green-400">
+                arrow_downward
+              </span>
               <span className="font-medium">Income</span>
             </div>
             <div className="font-medium text-green-600 dark:text-green-400">
-              {dashboardSummary.monthly.income.toLocaleString("en-IN", { style: "currency", currency: "INR" })}
+              {dashboardSummary.monthly.income.toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+              })}
             </div>
           </div>
           {expandedSummary === 'Income' && (
             <div className="balance-detail-row expanded pl-4 border-l-2 border-gray-200 dark:border-slate-700 ml-4">
-              <div key="Today" className="flex justify-between items-center text-sm ml-8 py-1">
+              <div
+                key="Today"
+                className="flex justify-between items-center text-sm ml-8 py-1"
+              >
                 <span className="text-gray-600 dark:text-gray-400">Today</span>
-                <span className="font-normal">{dashboardSummary.daily.income.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
+                <span className="font-normal">
+                  {dashboardSummary.daily.income.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
+                </span>
               </div>
-              <div key="This Week" className="flex justify-between items-center text-sm ml-8 py-1">
-                <span className="text-gray-600 dark:text-gray-400">This Week</span>
-                <span className="font-normal">{dashboardSummary.weekly.income.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
+              <div
+                key="This Week"
+                className="flex justify-between items-center text-sm ml-8 py-1"
+              >
+                <span className="text-gray-600 dark:text-gray-400">
+                  This Week
+                </span>
+                <span className="font-normal">
+                  {dashboardSummary.weekly.income.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
+                </span>
               </div>
-              <div key="This Month" className="flex justify-between items-center text-sm ml-8 py-1">
-                <span className="text-gray-600 dark:text-gray-400">This Month</span>
-                <span className="font-normal">{dashboardSummary.monthly.income.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
+              <div
+                key="This Month"
+                className="flex justify-between items-center text-sm ml-8 py-1"
+              >
+                <span className="text-gray-600 dark:text-gray-400">
+                  This Month
+                </span>
+                <span className="font-normal">
+                  {dashboardSummary.monthly.income.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
+                </span>
               </div>
             </div>
           )}
         </div>
         {/* Spending Row */}
-        <div onClick={() => setExpandedSummary(expandedSummary === 'Spending' ? null : 'Spending')}>
+        <div
+          onClick={() =>
+            setExpandedSummary(
+              expandedSummary === 'Spending' ? null : 'Spending'
+            )
+          }
+        >
           <div className="summary-row flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer">
             <div className="flex items-center">
-              <span className="material-symbols-outlined mr-3 text-red-600 dark:text-red-400">arrow_upward</span>
+              <span className="material-symbols-outlined mr-3 text-red-600 dark:text-red-400">
+                arrow_upward
+              </span>
               <span className="font-medium">Spending</span>
             </div>
             <div className="font-medium text-red-600 dark:text-red-400">
-              {dashboardSummary.monthly.expense.toLocaleString("en-IN", { style: "currency", currency: "INR" })}
+              {dashboardSummary.monthly.expense.toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+              })}
             </div>
           </div>
           {expandedSummary === 'Spending' && (
             <div className="balance-detail-row expanded pl-4 border-l-2 border-gray-200 dark:border-slate-700 ml-4">
-              <div key="Today" className="flex justify-between items-center text-sm ml-8 py-1">
+              <div
+                key="Today"
+                className="flex justify-between items-center text-sm ml-8 py-1"
+              >
                 <span className="text-gray-600 dark:text-gray-400">Today</span>
-                <span className="font-normal">{dashboardSummary.daily.expense.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
+                <span className="font-normal">
+                  {dashboardSummary.daily.expense.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
+                </span>
               </div>
-              <div key="This Week" className="flex justify-between items-center text-sm ml-8 py-1">
-                <span className="text-gray-600 dark:text-gray-400">This Week</span>
-                <span className="font-normal">{dashboardSummary.weekly.expense.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
+              <div
+                key="This Week"
+                className="flex justify-between items-center text-sm ml-8 py-1"
+              >
+                <span className="text-gray-600 dark:text-gray-400">
+                  This Week
+                </span>
+                <span className="font-normal">
+                  {dashboardSummary.weekly.expense.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
+                </span>
               </div>
-              <div key="This Month" className="flex justify-between items-center text-sm ml-8 py-1">
-                <span className="text-gray-600 dark:text-gray-400">This Month</span>
-                <span className="font-normal">{dashboardSummary.monthly.expense.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
+              <div
+                key="This Month"
+                className="flex justify-between items-center text-sm ml-8 py-1"
+              >
+                <span className="text-gray-600 dark:text-gray-400">
+                  This Month
+                </span>
+                <span className="font-normal">
+                  {dashboardSummary.monthly.expense.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
+                </span>
               </div>
             </div>
-          )
-          }
+          )}
         </div>
       </div>
 
       {/* Current Balances Section */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm mb-6">
-        <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">Current Balances</h2>
+        <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
+          Current Balances
+        </h2>
         <div className="space-y-2">
           {Object.entries(accountBalances).map(([type, group]) => (
             <div key={type}>
               <div
                 className="balance-summary-row flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer"
-                onClick={() => setExpandedBalances(prev => ({ ...prev, [type]: !prev[type] }))}
+                onClick={() =>
+                  setExpandedBalances((prev) => ({
+                    ...prev,
+                    [type]: !prev[type],
+                  }))
+                }
               >
                 <div className="flex items-center">
-                  <span className="material-symbols-outlined mr-3 text-gray-500 dark:text-gray-400">{accountTypeIcons[type] || 'credit_score'}</span>
+                  <span className="material-symbols-outlined mr-3 text-gray-500 dark:text-gray-400">
+                    {accountTypeIcons[type] || 'credit_score'}
+                  </span>
                   <span className="font-medium">{type}</span>
                 </div>
-                <div className={`font-medium ${group.total < 0 ? "text-red-600 dark:text-red-400" : "text-gray-800 dark:text-gray-200"}`}>
-                  {group.total.toLocaleString("en-IN", { style: "currency", currency: "INR" })}
+                <div
+                  className={`font-medium ${group.total < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}
+                >
+                  {group.total.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
                 </div>
               </div>
               {expandedBalances[type] && (
                 <div className="balance-detail-row expanded pl-4 border-l-2 border-gray-200 dark:border-slate-700 ml-4">
-                  {group.accounts.map(acc => (
-                    <div key={acc.name} className="flex justify-between items-center text-sm ml-8 py-1">
-                      <span className="text-gray-600 dark:text-gray-400">{acc.name}</span>
-                      <span className="font-normal">{acc.balance.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</span>
+                  {group.accounts.map((acc) => (
+                    <div
+                      key={acc.name}
+                      className="flex justify-between items-center text-sm ml-8 py-1"
+                    >
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {acc.name}
+                      </span>
+                      <span className="font-normal">
+                        {acc.balance.toLocaleString('en-IN', {
+                          style: 'currency',
+                          currency: 'INR',
+                        })}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -213,16 +326,25 @@ export const HomePage = ({ user, transactions, accounts, onNavigate }) => {
       {/* Recent Transactions Section */}
       <div>
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">Recent Transactions</h2>
-          <button onClick={() => onNavigate('transactions')} className="text-sm font-medium text-blue-600 dark:text-blue-400">
+          <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">
+            Recent Transactions
+          </h2>
+          <button
+            onClick={() => onNavigate('transactions')}
+            className="text-sm font-medium text-blue-600 dark:text-blue-400"
+          >
             See All
           </button>
         </div>
         <div className="space-y-3">
           {recentTransactions.length > 0 ? (
-            recentTransactions.map(tx => <TransactionCard key={tx.id} transaction={tx} />)
+            recentTransactions.map((tx) => (
+              <TransactionCard key={tx.id} transaction={tx} />
+            ))
           ) : (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-4">No recent transactions.</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+              No recent transactions.
+            </p>
           )}
         </div>
       </div>

@@ -3,7 +3,9 @@ import React from 'react';
 export const DateTimeInputs = ({ date, time, onDateChange, onTimeChange }) => (
   <div className="grid grid-cols-2 gap-4">
     <div className="date-time-input bg-white dark:bg-slate-800">
-      <span className="material-symbols-outlined mr-2 text-gray-500 dark:text-gray-400">calendar_month</span>
+      <span className="material-symbols-outlined mr-2 text-gray-500 dark:text-gray-400">
+        calendar_month
+      </span>
       <input
         type="date"
         value={date}
@@ -13,7 +15,9 @@ export const DateTimeInputs = ({ date, time, onDateChange, onTimeChange }) => (
       />
     </div>
     <div className="date-time-input bg-white dark:bg-slate-800">
-      <span className="material-symbols-outlined mr-2 text-gray-500 dark:text-gray-400">schedule</span>
+      <span className="material-symbols-outlined mr-2 text-gray-500 dark:text-gray-400">
+        schedule
+      </span>
       <input
         type="time"
         value={time}
