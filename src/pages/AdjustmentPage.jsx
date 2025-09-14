@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 export const AdjustmentPage = ({
   onBack,
   onSave,
   accounts,
-  currentBalances,
   openSelectionSheet,
 }) => {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [actualBalance, setActualBalance] = useState('');
 
-  const appBalance = selectedAccount
-    ? currentBalances[selectedAccount.name] || 0
-    : 0;
+  const appBalance = selectedAccount ? selectedAccount.balance || 0 : 0;
   const difference =
     actualBalance !== '' ? parseFloat(actualBalance) - appBalance : 0;
 

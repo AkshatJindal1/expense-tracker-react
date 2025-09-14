@@ -13,13 +13,26 @@ export const AddAccountPage = ({
 
   const [name, setName] = useState(initialData?.name || '');
   const [type, setType] = useState(initialData?.type || '');
+  const [initialBalance, setInitialBalance] = useState(
+    initialData?.balance || '0'
+  );
 
   const handleSave = () => {
     if (!name || !type) {
-      console.error('Please fill all fields.');
+      alert('Please fill all fields.');
       return;
     }
-    onSave({ id: initialData?.id, name, type });
+    const accountData = {
+      id: initialData?.id,
+      name,
+      type,
+      balance: parseFloat(initialBalance) || 0,
+    };
+    // Don't update balance if editing, only set on creation
+    if (isEditing) {
+      delete accountData.balance;
+    }
+    onSave(accountData);
   };
 
   return (
@@ -73,6 +86,15 @@ export const AddAccountPage = ({
             {type || 'Select Type'}
           </span>
         </div>
+        {!isEditing && (
+          <input
+            type="number"
+            value={initialBalance}
+            onChange={(e) => setInitialBalance(e.target.value)}
+            placeholder="Initial Balance"
+            className="w-full bg-gray-100 dark:bg-slate-700 p-3 rounded-lg placeholder-gray-500 dark:placeholder-gray-400 text-gray-800 dark:text-gray-200 border border-transparent focus:border-blue-500 focus:ring-0 outline-none"
+          />
+        )}
       </div>
       <button
         onClick={handleSave}

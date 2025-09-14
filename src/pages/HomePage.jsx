@@ -1,5 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TransactionCard } from '../components/TransactionCard';
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  where,
+  getDocs,
+} from 'firebase/firestore';
+import { db } from '../firebase.js';
 
 export const HomePage = ({
   user,
@@ -10,114 +19,104 @@ export const HomePage = ({
 }) => {
   const [expandedSummary, setExpandedSummary] = useState(null); // 'Income', 'Spending', or null
   const [expandedBalances, setExpandedBalances] = useState({}); // e.g., { 'Bank': true }
+  const [summaryData, setSummaryData] = useState({
+    daily: { income: 0, expense: 0 },
+    weekly: { income: 0, expense: 0 },
+    monthly: { income: 0, expense: 0 },
+  });
 
   const userName = user?.displayName || user?.email?.split('@')[0] || 'There';
 
-  // useMemo will re-calculate the dashboard summary only when `transactions` change.
-  const dashboardSummary = useMemo(() => {
-    if (!transactions) {
-      return {
-        daily: { income: 0, expense: 0 },
-        weekly: { income: 0, expense: 0 },
-        monthly: { income: 0, expense: 0 },
-      };
-    }
+  useEffect(() => {
+    const fetchSummaries = async () => {
+      if (!user) return;
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
 
-    const calculateIncomeExpense = (txs) => {
-      return txs.reduce(
-        (acc, tx) => {
-          if (tx.type === 'Income') {
-            acc.income += tx.amount;
-          } else if (tx.type === 'Expense') {
-            acc.expense += tx.amount;
+        // Fetch monthly summary
+        const monthId = `${year}-${month}`;
+        const monthlyAnalyticsRef = collection(
+          db,
+          `analytics/${user.uid}/monthly`
+        );
+        const monthlyQuery = query(
+          monthlyAnalyticsRef,
+          where('__name__', '==', monthId)
+        );
+        const monthlySnap = await getDocs(monthlyQuery);
+        const monthlyDoc = monthlySnap.docs[0]?.data() || {
+          totalIncome: 0,
+          totalExpense: 0,
+        };
+
+        // Fetch last 7 daily summaries for weekly calculation
+        const dailyAnalyticsRef = collection(db, `analytics/${user.uid}/daily`);
+        const dailyQuery = query(
+          dailyAnalyticsRef,
+          orderBy('__name__', 'desc'),
+          limit(7)
+        );
+        const dailySnap = await getDocs(dailyQuery);
+
+        let weeklyIncome = 0;
+        let weeklyExpense = 0;
+        let dailyIncome = 0;
+        let dailyExpense = 0;
+
+        const todayId = `${monthId}-${day}`;
+
+        dailySnap.docs.forEach((doc) => {
+          const data = doc.data();
+          // Check if doc ID is within the last 7 days from today
+          const docDate = new Date(doc.id);
+          const diffTime = Math.abs(now - docDate);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays <= 7) {
+            weeklyIncome += data.totalIncome || 0;
+            weeklyExpense += data.totalExpense || 0;
           }
-          return acc;
-        },
-        { income: 0, expense: 0 }
-      );
+
+          if (doc.id === todayId) {
+            dailyIncome = data.totalIncome || 0;
+            dailyExpense = data.totalExpense || 0;
+          }
+        });
+
+        setSummaryData({
+          daily: { income: dailyIncome, expense: dailyExpense },
+          weekly: { income: weeklyIncome, expense: weeklyExpense },
+          monthly: {
+            income: monthlyDoc.totalIncome || 0,
+            expense: monthlyDoc.totalExpense || 0,
+          },
+        });
+      } catch (error) {
+        console.error('Error fetching summaries:', error);
+      }
     };
 
-    const now = new Date();
-    const startOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const startOfWeek = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - now.getDay()
-    );
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    fetchSummaries();
+  }, [user, transactions]);
 
-    const dailyTransactions = transactions.filter(
-      (t) => t.date && t.date.toDate() >= startOfDay
-    );
-    const weeklyTransactions = transactions.filter(
-      (t) => t.date && t.date.toDate() >= startOfWeek
-    );
-    const monthlyTransactions = transactions.filter(
-      (t) => t.date && t.date.toDate() >= startOfMonth
-    );
-    const dailySummary = calculateIncomeExpense(dailyTransactions);
-    const weeklySummary = calculateIncomeExpense(weeklyTransactions);
-    const monthlySummary = calculateIncomeExpense(monthlyTransactions);
-
-    return {
-      daily: dailySummary,
-      weekly: weeklySummary,
-      monthly: monthlySummary,
-    };
-  }, [transactions]);
-
-  // useMemo will re-calculate balances only when `transactions` or `accounts` change.
   const accountBalances = useMemo(() => {
     if (!accounts || accounts.length === 0) return {};
 
-    const balances = accounts.reduce(
-      (acc, account) => ({ ...acc, [account.name]: 0 }),
-      {}
-    );
-
-    transactions.forEach((tx) => {
-      if (tx.type === 'Transfer') {
-        if (Object.hasOwn(balances, tx.source))
-          balances[tx.source] -= tx.amount;
-        if (Object.hasOwn(balances, tx.destination))
-          balances[tx.destination] += tx.amount;
-      }
-      if (tx.type === 'Income') {
-        if (Object.hasOwn(balances, tx.destination))
-          balances[tx.destination] += tx.amount;
-      }
-      if (tx.type === 'Expense') {
-        if (Object.hasOwn(balances, tx.source))
-          balances[tx.source] -= tx.amount;
-      }
-      if (tx.splitAmount > 0) {
-        const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
-        if (
-          splitwiseAccount &&
-          Object.hasOwn(balances, splitwiseAccount.name)
-        ) {
-          balances[splitwiseAccount.name] += tx.splitAmount;
-        }
-      }
-    });
-
-    // Group balances by account type
     const grouped = {};
     accounts.forEach((acc) => {
       if (!grouped[acc.type]) {
         grouped[acc.type] = { total: 0, accounts: [] };
       }
-      const balance = balances[acc.name] || 0;
+      const balance = acc.balance || 0;
       grouped[acc.type].total += balance;
       grouped[acc.type].accounts.push({ name: acc.name, balance });
     });
 
     return grouped;
-  }, [transactions, accounts]);
+  }, [accounts]);
 
   const recentTransactions = transactions
     .filter((tx) => !tx.category.includes('Adjustment'))
@@ -152,7 +151,7 @@ export const HomePage = ({
               <span className="font-medium">Income</span>
             </div>
             <div className="font-medium text-green-600 dark:text-green-400">
-              {dashboardSummary.monthly.income.toLocaleString('en-IN', {
+              {summaryData.monthly.income.toLocaleString('en-IN', {
                 style: 'currency',
                 currency: 'INR',
               })}
@@ -166,7 +165,7 @@ export const HomePage = ({
               >
                 <span className="text-gray-600 dark:text-gray-400">Today</span>
                 <span className="font-normal">
-                  {dashboardSummary.daily.income.toLocaleString('en-IN', {
+                  {summaryData.daily.income.toLocaleString('en-IN', {
                     style: 'currency',
                     currency: 'INR',
                   })}
@@ -180,7 +179,7 @@ export const HomePage = ({
                   This Week
                 </span>
                 <span className="font-normal">
-                  {dashboardSummary.weekly.income.toLocaleString('en-IN', {
+                  {summaryData.weekly.income.toLocaleString('en-IN', {
                     style: 'currency',
                     currency: 'INR',
                   })}
@@ -194,7 +193,7 @@ export const HomePage = ({
                   This Month
                 </span>
                 <span className="font-normal">
-                  {dashboardSummary.monthly.income.toLocaleString('en-IN', {
+                  {summaryData.monthly.income.toLocaleString('en-IN', {
                     style: 'currency',
                     currency: 'INR',
                   })}
@@ -219,7 +218,7 @@ export const HomePage = ({
               <span className="font-medium">Spending</span>
             </div>
             <div className="font-medium text-red-600 dark:text-red-400">
-              {dashboardSummary.monthly.expense.toLocaleString('en-IN', {
+              {summaryData.monthly.expense.toLocaleString('en-IN', {
                 style: 'currency',
                 currency: 'INR',
               })}
@@ -233,7 +232,7 @@ export const HomePage = ({
               >
                 <span className="text-gray-600 dark:text-gray-400">Today</span>
                 <span className="font-normal">
-                  {dashboardSummary.daily.expense.toLocaleString('en-IN', {
+                  {summaryData.daily.expense.toLocaleString('en-IN', {
                     style: 'currency',
                     currency: 'INR',
                   })}
@@ -247,7 +246,7 @@ export const HomePage = ({
                   This Week
                 </span>
                 <span className="font-normal">
-                  {dashboardSummary.weekly.expense.toLocaleString('en-IN', {
+                  {summaryData.weekly.expense.toLocaleString('en-IN', {
                     style: 'currency',
                     currency: 'INR',
                   })}
@@ -261,7 +260,7 @@ export const HomePage = ({
                   This Month
                 </span>
                 <span className="font-normal">
-                  {dashboardSummary.monthly.expense.toLocaleString('en-IN', {
+                  {summaryData.monthly.expense.toLocaleString('en-IN', {
                     style: 'currency',
                     currency: 'INR',
                   })}

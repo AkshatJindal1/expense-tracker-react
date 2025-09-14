@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -11,8 +11,10 @@ import {
   ArcElement,
 } from 'chart.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { collection, query, getDocs, limit, orderBy } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Spinner } from '../components/Spinner.jsx';
 
-// This registration is necessary for Chart.js v3+ with react-chartjs-2
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -23,10 +25,12 @@ ChartJS.register(
   Legend
 );
 
-export const AnalyticsPage = ({ transactions, onBack }) => {
-  const { resolvedTheme } = useTheme(); // Get the current theme
+export const AnalyticsPage = ({ user, onBack }) => {
+  const { resolvedTheme } = useTheme();
+  const [monthlySummaries, setMonthlySummaries] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Define chart colors based on the current theme for better visibility
+  // Define chart colors based on the current theme
   const textColor =
     resolvedTheme === 'dark'
       ? 'rgba(255, 255, 255, 0.8)'
@@ -35,7 +39,6 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
     resolvedTheme === 'dark'
       ? 'rgba(255, 255, 255, 0.1)'
       : 'rgba(0, 0, 0, 0.1)';
-
   const lightModeColors = [
     '#4285F4',
     '#DB4437',
@@ -46,7 +49,6 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
     '#FF7043',
     '#795548',
   ];
-
   const darkModeColors = [
     '#8AB4F8',
     '#F28B82',
@@ -58,111 +60,99 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
     '#BCAAA4',
   ];
 
-  // useMemo will recalculate analytics data only when the transactions prop changes
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!user) return;
+      setLoading(true);
+      try {
+        const q = query(
+          collection(db, `analytics/${user.uid}/monthly`),
+          orderBy('__name__', 'desc'),
+          limit(6)
+        );
+        const querySnapshot = await getDocs(q);
+        const summaries = querySnapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .reverse();
+        setMonthlySummaries(summaries);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, [user]);
+
   const analyticsData = useMemo(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthlyExpenses = transactions.filter(
-      (t) => t.date && t.date.toDate() >= startOfMonth && t.type === 'Expense'
-    );
-    const monthlyExpensesWithoutAdjustment = monthlyExpenses.filter(
-      (t) => !t.category.includes('Adjustment')
-    );
+    if (monthlySummaries.length === 0) {
+      return {
+        avgDailySpend: 0,
+        avgTxSpend: 0,
+        sortedCategories: [],
+        sortedCategoriesWithoutAdjustment: [],
+        totalMonthlySpend: 0,
+        totalMonthlySpendWithoutAdjustment: 0,
+        monthLabels: [],
+        barChartData: [],
+        doughnutChartData: { labels: [], datasets: [{ data: [] }] },
+      };
+    }
 
-    const totalMonthlySpend = monthlyExpenses.reduce(
-      (sum, tx) => sum + tx.amount - (tx.splitAmount || 0),
-      0
-    );
-    const totalMonthlySpendWithoutAdjustment =
-      monthlyExpensesWithoutAdjustment.reduce(
-        (sum, tx) => sum + tx.amount - (tx.splitAmount || 0),
-        0
-      );
-    const avgDailySpend = totalMonthlySpend / now.getDate();
-    const avgTxSpend =
-      monthlyExpensesWithoutAdjustment.length > 0
-        ? totalMonthlySpendWithoutAdjustment /
-          monthlyExpensesWithoutAdjustment.length
-        : 0;
+    const latestMonth = monthlySummaries[monthlySummaries.length - 1] || {};
+    const totalMonthlySpend = latestMonth.totalExpense || 0;
+    const transactionCount = latestMonth.numExpenseTransactions || 0;
+    const expenseCategoryTotals = latestMonth.expenseCategoryTotals || {};
 
-    const categoryTotals = monthlyExpenses.reduce((acc, tx) => {
-      const category = tx.category || 'Uncategorized';
-      acc[category] =
-        (acc[category] || 0) + (tx.amount - (tx.splitAmount || 0));
-      return acc;
-    }, {});
-
-    const sortedCategories = Object.entries(categoryTotals).sort(
+    const sortedCategories = Object.entries(expenseCategoryTotals).sort(
       (a, b) => b[1] - a[1]
     );
     const sortedCategoriesWithoutAdjustment = sortedCategories.filter(
       (c) => !c[0].includes('Adjustment')
     );
+    const totalMonthlySpendWithoutAdjustment =
+      sortedCategoriesWithoutAdjustment.reduce(
+        (sum, [, amount]) => sum + amount,
+        0
+      );
 
-    // Bar Chart Data Calculation ---
-    const monthlySpending = {};
-    const monthLabels = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(1); // Avoid issues with different month lengths
-      d.setMonth(d.getMonth() - i);
-      const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
-      monthlySpending[monthKey] = 0;
-      monthLabels.push(d.toLocaleString('default', { month: 'short' }));
-    }
+    const monthLabels = monthlySummaries.map((s) =>
+      new Date(s.id + '-02').toLocaleString('default', { month: 'short' })
+    );
+    const barChartDataValues = monthlySummaries.map((s) => s.totalExpense || 0);
 
-    transactions
-      .filter((t) => t.type === 'Expense')
-      .forEach((tx) => {
-        const txDate = tx.date.toDate();
-        const monthKey = `${txDate.getFullYear()}-${txDate.getMonth()}`;
-        if (monthlySpending.hasOwnProperty(monthKey)) {
-          monthlySpending[monthKey] += tx.amount - (tx.splitAmount || 0);
-        }
-      });
+    const doughnutLabels = sortedCategoriesWithoutAdjustment.map((c) => c[0]);
+    const doughnutData = sortedCategoriesWithoutAdjustment.map((c) => c[1]);
 
-    const barChartData = Object.values(monthlySpending);
+    // This is a rough estimation, for a more accurate daily average, you would fetch daily summaries.
+    const avgDailySpend = totalMonthlySpend / new Date().getDate();
+    const avgTxSpend =
+      transactionCount > 0 ? totalMonthlySpend / transactionCount : 0;
 
     return {
       avgDailySpend,
       avgTxSpend,
       sortedCategories,
-      sortedCategoriesWithoutAdjustment,
       totalMonthlySpend,
       totalMonthlySpendWithoutAdjustment,
       monthLabels,
-      barChartData,
+      barChartData: barChartDataValues,
+      doughnutChartData: {
+        labels: doughnutLabels,
+        datasets: [
+          {
+            data: doughnutData,
+            backgroundColor:
+              resolvedTheme === 'dark' ? darkModeColors : lightModeColors,
+            borderColor: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
+            borderWidth: 2,
+          },
+        ],
+      },
     };
-  }, [transactions]);
+  }, [monthlySummaries, resolvedTheme]);
 
-  // Data for the Doughnut chart
-  const doughnutChartData = {
-    labels: analyticsData.sortedCategoriesWithoutAdjustment.map((c) => c[0]),
-    datasets: [
-      {
-        data: analyticsData.sortedCategoriesWithoutAdjustment.map((c) => c[1]),
-        backgroundColor:
-          resolvedTheme === 'dark' ? darkModeColors : lightModeColors,
-        borderColor: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  // Data for the Bar chart
-  const barChartData = {
-    labels: analyticsData.monthLabels,
-    datasets: [
-      {
-        label: 'Total Spending',
-        data: analyticsData.barChartData,
-        backgroundColor: resolvedTheme === 'dark' ? '#8AB4F8' : '#4285F4',
-        borderRadius: 4,
-      },
-    ],
-  };
-
-  const chartOptions = {
+  const barChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
@@ -172,10 +162,7 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
         ticks: { color: textColor, callback: (value) => `₹${value / 1000}k` },
         grid: { color: gridColor },
       },
-      x: {
-        ticks: { color: textColor },
-        grid: { display: false },
-      },
+      x: { ticks: { color: textColor }, grid: { display: false } },
     },
   };
 
@@ -184,6 +171,10 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
   };
+
+  if (loading) {
+    return <Spinner />;
+  }
 
   return (
     <div className="page p-4 active text-gray-800 dark:text-gray-200 min-h-screen">
@@ -222,22 +213,37 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
         <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
           Month-on-Month Spending
         </h2>
-        <Bar data={barChartData} options={chartOptions} />
+        <Bar
+          data={{
+            labels: analyticsData.monthLabels,
+            datasets: [
+              {
+                label: 'Total Spending',
+                data: analyticsData.barChartData,
+                backgroundColor:
+                  resolvedTheme === 'dark' ? '#8AB4F8' : '#4285F4',
+                borderRadius: 4,
+              },
+            ],
+          }}
+          options={barChartOptions}
+        />
       </div>
 
-      {analyticsData.sortedCategoriesWithoutAdjustment.length > 0 && (
+      {analyticsData.doughnutChartData.labels.length > 0 && (
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm mb-6">
           <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
             Spending for{' '}
             {new Date().toLocaleString('default', { month: 'long' })}
           </h2>
           <div className="h-64 mb-4">
-            <Doughnut data={doughnutChartData} options={doughnutOptions} />
+            <Doughnut
+              data={analyticsData.doughnutChartData}
+              options={doughnutOptions}
+            />
           </div>
-          {(() => {
-            if (analyticsData.totalMonthlySpendWithoutAdjustment === 0)
-              return null;
-            return doughnutChartData.labels.map((label, index) => (
+          {analyticsData.totalMonthlySpendWithoutAdjustment > 0 &&
+            analyticsData.doughnutChartData.labels.map((label, index) => (
               <div
                 key={label}
                 className="flex items-center justify-between py-1"
@@ -247,9 +253,11 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
                     className="w-4 h-4 rounded-full mr-3"
                     style={{
                       backgroundColor:
-                        doughnutChartData.datasets[0].backgroundColor[
+                        analyticsData.doughnutChartData.datasets[0]
+                          .backgroundColor[
                           index %
-                            doughnutChartData.datasets[0].backgroundColor.length
+                            analyticsData.doughnutChartData.datasets[0]
+                              .backgroundColor.length
                         ],
                     }}
                   />
@@ -257,15 +265,14 @@ export const AnalyticsPage = ({ transactions, onBack }) => {
                 </div>
                 <span>
                   {(
-                    (doughnutChartData.datasets[0].data[index] /
+                    (analyticsData.doughnutChartData.datasets[0].data[index] /
                       analyticsData.totalMonthlySpendWithoutAdjustment) *
                     100
                   ).toFixed(1)}
                   %
                 </span>
               </div>
-            ));
-          })()}
+            ))}
         </div>
       )}
 

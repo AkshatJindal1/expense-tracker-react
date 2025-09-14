@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from './firebase.js';
 import {
@@ -16,6 +16,11 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  limit,
+  writeBatch,
+  runTransaction,
+  increment,
+  getDoc,
 } from 'firebase/firestore';
 
 // Component Imports
@@ -73,14 +78,18 @@ function App() {
     }
     const txQuery = query(
       collection(db, 'users', user.uid, 'transactions'),
-      orderBy('date', 'desc')
+      orderBy('date', 'desc'),
+      limit(10)
     );
     const txUnsub = onSnapshot(txQuery, (snapshot) =>
       setTransactions(
         snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
       )
     );
-    const accQuery = query(collection(db, 'users', user.uid, 'accounts'));
+    const accQuery = query(
+      collection(db, 'users', user.uid, 'accounts'),
+      orderBy('name')
+    );
     const accUnsub = onSnapshot(accQuery, (snapshot) =>
       setAccounts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
     );
@@ -169,42 +178,40 @@ function App() {
     await Promise.all(promises);
   };
 
-  const currentBalances = useMemo(() => {
-    if (!accounts || accounts.length === 0) return {};
-    const balances = accounts.reduce(
-      (acc, account) => ({ ...acc, [account.name]: 0 }),
-      {}
-    );
-    transactions.forEach((tx) => {
-      if (tx.type === 'Transfer') {
-        if (Object.hasOwn(balances, tx.source))
-          balances[tx.source] -= tx.amount;
-        if (Object.hasOwn(balances, tx.destination))
-          balances[tx.destination] += tx.amount;
-      } else if (tx.type === 'Income') {
-        if (Object.hasOwn(balances, tx.destination))
-          balances[tx.destination] += tx.amount;
-      } else if (tx.type === 'Expense') {
-        if (Object.hasOwn(balances, tx.source))
-          balances[tx.source] -= tx.amount;
-      }
-      if (tx.splitAmount > 0) {
-        const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
-        if (
-          splitwiseAccount &&
-          Object.hasOwn(balances, splitwiseAccount.name)
-        ) {
-          balances[splitwiseAccount.name] += tx.splitAmount;
-        }
-      }
-    });
-    return balances;
-  }, [transactions, accounts]);
+  // const currentBalances = useMemo(() => {
+  //   if (!accounts || accounts.length === 0) return {};
+  //   const balances = accounts.reduce(
+  //     (acc, account) => ({ ...acc, [account.name]: 0 }),
+  //     {}
+  //   );
+  //   transactions.forEach((tx) => {
+  //     if (tx.type === 'Transfer') {
+  //       if (Object.hasOwn(balances, tx.source))
+  //         balances[tx.source] -= tx.amount;
+  //       if (Object.hasOwn(balances, tx.destination))
+  //         balances[tx.destination] += tx.amount;
+  //     } else if (tx.type === 'Income') {
+  //       if (Object.hasOwn(balances, tx.destination))
+  //         balances[tx.destination] += tx.amount;
+  //     } else if (tx.type === 'Expense') {
+  //       if (Object.hasOwn(balances, tx.source))
+  //         balances[tx.source] -= tx.amount;
+  //     }
+  //     if (tx.splitAmount > 0) {
+  //       const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
+  //       if (
+  //         splitwiseAccount &&
+  //         Object.hasOwn(balances, splitwiseAccount.name)
+  //       ) {
+  //         balances[splitwiseAccount.name] += tx.splitAmount;
+  //       }
+  //     }
+  //   });
+  //   return balances;
+  // }, [transactions, accounts]);
 
   const handleSignIn = () => {
-    signInWithPopup(auth, new GoogleAuthProvider()).catch((err) =>
-      console.error(err)
-    );
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
   };
 
   const handleSignOut = () => {
@@ -213,6 +220,12 @@ function App() {
 
   const handleSaveTransaction = async (transactionData) => {
     const { id, ...data } = transactionData;
+    const amount = data.amount || 0;
+    const splitAmount = data.splitAmount || 0;
+    const date = data.date; //.toDate();
+    const monthId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const dayId = `${monthId}-${String(date.getDate()).padStart(2, '0')}`;
+
     const involved = [];
     if (data.type === 'Expense' && data.source) involved.push(data.source);
     if (data.type === 'Income' && data.destination)
@@ -222,24 +235,342 @@ function App() {
       if (data.destination) involved.push(data.destination);
     }
     const finalData = { ...data, involvedAccounts: involved };
-    const ref = collection(db, 'users', user.uid, 'transactions');
+
+    const accountsRef = collection(db, 'users', user.uid, 'accounts');
+    const transactionsRef = collection(db, 'users', user.uid, 'transactions');
+    const monthlyAnalyticsRef = doc(
+      db,
+      `analytics/${user.uid}/monthly/${monthId}`
+    );
+    const dailyAnalyticsRef = doc(db, `analytics/${user.uid}/daily/${dayId}`);
+
     if (id) {
-      await updateDoc(doc(ref, id), finalData);
+      // --- UPDATE ---
+      await runTransaction(db, async (firestoreTransaction) => {
+        const txDocRef = doc(transactionsRef, id);
+        const txDoc = await firestoreTransaction.get(txDocRef);
+        if (!txDoc.exists()) throw 'Transaction does not exist!';
+
+        const before = txDoc.data();
+        const oldAmount = before.amount || 0;
+        const oldSplitAmount = before.splitAmount || 0;
+        const oldDate = before.date.toDate();
+        const oldMonthId = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}`;
+        const oldDayId = `${oldMonthId}-${String(oldDate.getDate()).padStart(2, '0')}`;
+        const oldMonthlyRef = doc(
+          db,
+          `analytics/${user.uid}/monthly/${oldMonthId}`
+        );
+        const oldDailyRef = doc(db, `analytics/${user.uid}/daily/${oldDayId}`);
+        const oldSourceAccount = accounts.find((a) => a.name === before.source);
+        const oldDestAccount = accounts.find(
+          (a) => a.name === before.destination
+        );
+
+        // 1. Revert old transaction
+        if (before.type === 'Expense') {
+          if (oldSourceAccount)
+            firestoreTransaction.update(doc(accountsRef, oldSourceAccount.id), {
+              balance: increment(oldAmount),
+            });
+          if (oldSplitAmount > 0) {
+            const splitwiseAccount = accounts.find(
+              (a) => a.type === 'Splitwise'
+            );
+            if (splitwiseAccount)
+              firestoreTransaction.update(
+                doc(accountsRef, splitwiseAccount.id),
+                { balance: increment(-oldSplitAmount) }
+              );
+          }
+          firestoreTransaction.set(
+            oldMonthlyRef,
+            {
+              totalExpense: increment(-oldAmount),
+              [`categoryTotals.${before.category}`]: increment(-oldAmount),
+            },
+            { merge: true }
+          );
+          firestoreTransaction.set(
+            oldDailyRef,
+            {
+              totalExpense: increment(-oldAmount),
+              [`categoryTotals.${before.category}`]: increment(-oldAmount),
+            },
+            { merge: true }
+          );
+        } else if (before.type === 'Income') {
+          if (oldDestAccount)
+            firestoreTransaction.update(doc(accountsRef, oldDestAccount.id), {
+              balance: increment(-oldAmount),
+            });
+          firestoreTransaction.set(
+            oldMonthlyRef,
+            { totalIncome: increment(-oldAmount) },
+            { merge: true }
+          );
+          firestoreTransaction.set(
+            oldDailyRef,
+            { totalIncome: increment(-oldAmount) },
+            { merge: true }
+          );
+        } else if (before.type === 'Transfer') {
+          if (oldSourceAccount)
+            firestoreTransaction.update(doc(accountsRef, oldSourceAccount.id), {
+              balance: increment(oldAmount),
+            });
+          if (oldDestAccount)
+            firestoreTransaction.update(doc(accountsRef, oldDestAccount.id), {
+              balance: increment(-oldAmount),
+            });
+          // Transfers may not affect analytics
+        }
+
+        // 2. Apply new transaction
+        const newSourceAccount = accounts.find(
+          (a) => a.name === finalData.source
+        );
+        const newDestAccount = accounts.find(
+          (a) => a.name === finalData.destination
+        );
+        if (finalData.type === 'Expense') {
+          if (newSourceAccount)
+            firestoreTransaction.update(doc(accountsRef, newSourceAccount.id), {
+              balance: increment(-amount),
+            });
+          if (splitAmount > 0) {
+            const splitwiseAccount = accounts.find(
+              (a) => a.type === 'Splitwise'
+            );
+            if (splitwiseAccount)
+              firestoreTransaction.update(
+                doc(accountsRef, splitwiseAccount.id),
+                { balance: increment(splitAmount) }
+              );
+          }
+          firestoreTransaction.set(
+            monthlyAnalyticsRef,
+            {
+              totalExpense: increment(amount),
+              [`categoryTotals.${finalData.category}`]: increment(amount),
+            },
+            { merge: true }
+          );
+          firestoreTransaction.set(
+            dailyAnalyticsRef,
+            {
+              totalExpense: increment(amount),
+              [`categoryTotals.${finalData.category}`]: increment(amount),
+            },
+            { merge: true }
+          );
+        } else if (finalData.type === 'Income') {
+          if (newDestAccount)
+            firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
+              balance: increment(amount),
+            });
+          firestoreTransaction.set(
+            monthlyAnalyticsRef,
+            { totalIncome: increment(amount) },
+            { merge: true }
+          );
+          firestoreTransaction.set(
+            dailyAnalyticsRef,
+            { totalIncome: increment(amount) },
+            { merge: true }
+          );
+        } else if (finalData.type === 'Transfer') {
+          if (newSourceAccount)
+            firestoreTransaction.update(doc(accountsRef, newSourceAccount.id), {
+              balance: increment(-amount),
+            });
+          if (newDestAccount)
+            firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
+              balance: increment(amount),
+            });
+          // Transfers may not affect analytics
+        }
+
+        // 3. Update the transaction itself
+        firestoreTransaction.update(txDocRef, finalData);
+      });
       handleBack();
     } else {
-      await addDoc(ref, finalData);
+      // --- CREATE ---
+      const batch = writeBatch(db);
+      batch.set(doc(transactionsRef), finalData);
+
+      const sourceAccount = accounts.find((a) => a.name === finalData.source);
+      const destAccount = accounts.find(
+        (a) => a.name === finalData.destination
+      );
+
+      if (finalData.type === 'Expense') {
+        if (sourceAccount)
+          batch.update(doc(accountsRef, sourceAccount.id), {
+            balance: increment(-amount),
+          });
+        if (splitAmount > 0) {
+          const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
+          if (splitwiseAccount)
+            batch.update(doc(accountsRef, splitwiseAccount.id), {
+              balance: increment(splitAmount),
+            });
+        }
+        batch.set(
+          monthlyAnalyticsRef,
+          {
+            totalExpense: increment(amount),
+            totalTransactions: increment(1),
+            [`categoryTotals.${finalData.category}`]: increment(amount),
+          },
+          { merge: true }
+        );
+        batch.set(
+          dailyAnalyticsRef,
+          {
+            totalExpense: increment(amount),
+            totalTransactions: increment(1),
+            [`categoryTotals.${finalData.category}`]: increment(amount),
+          },
+          { merge: true }
+        );
+      } else if (finalData.type === 'Income') {
+        if (destAccount)
+          batch.update(doc(accountsRef, destAccount.id), {
+            balance: increment(amount),
+          });
+        batch.set(
+          monthlyAnalyticsRef,
+          { totalIncome: increment(amount), totalTransactions: increment(1) },
+          { merge: true }
+        );
+        batch.set(
+          dailyAnalyticsRef,
+          { totalIncome: increment(amount), totalTransactions: increment(1) },
+          { merge: true }
+        );
+      } else if (finalData.type === 'Transfer') {
+        if (sourceAccount)
+          batch.update(doc(accountsRef, sourceAccount.id), {
+            balance: increment(-amount),
+          });
+        if (destAccount)
+          batch.update(doc(accountsRef, destAccount.id), {
+            balance: increment(amount),
+          });
+        // Transfers may not affect analytics
+      }
+
+      await batch.commit();
       navigate('/transactions');
     }
   };
 
   const performDeleteTransactions = async (ids) => {
-    await Promise.all(
-      ids.map((id) => deleteDoc(doc(db, 'users', user.uid, 'transactions', id)))
-    );
+    const batch = writeBatch(db);
+    const accountsRef = collection(db, 'users', user.uid, 'accounts');
+
+    for (const id of ids) {
+      const txRef = doc(db, 'users', user.uid, 'transactions', id);
+      const txDoc = await getDoc(txRef);
+      if (txDoc.exists()) {
+        const transaction = txDoc.data();
+        const amount = transaction.amount || 0;
+        const splitAmount = transaction.splitAmount || 0;
+        const date = transaction.date.toDate();
+        const monthId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const dayId = `${monthId}-${String(date.getDate()).padStart(2, '0')}`;
+        const monthlyAnalyticsRef = doc(
+          db,
+          `analytics/${user.uid}/monthly/${monthId}`
+        );
+        const dailyAnalyticsRef = doc(
+          db,
+          `analytics/${user.uid}/daily/${dayId}`
+        );
+        const sourceAccount = accounts.find(
+          (a) => a.name === transaction.source
+        );
+        const destAccount = accounts.find(
+          (a) => a.name === transaction.destination
+        );
+
+        batch.delete(txRef);
+
+        if (transaction.type === 'Expense') {
+          if (sourceAccount)
+            batch.update(doc(accountsRef, sourceAccount.id), {
+              balance: increment(amount),
+            });
+          if (splitAmount > 0) {
+            const splitwiseAccount = accounts.find(
+              (a) => a.type === 'Splitwise'
+            );
+            if (splitwiseAccount)
+              batch.update(doc(accountsRef, splitwiseAccount.id), {
+                balance: increment(-splitAmount),
+              });
+          }
+          batch.set(
+            monthlyAnalyticsRef,
+            {
+              totalExpense: increment(-amount),
+              totalTransactions: increment(-1),
+              [`categoryTotals.${transaction.category}`]: increment(-amount),
+            },
+            { merge: true }
+          );
+          batch.set(
+            dailyAnalyticsRef,
+            {
+              totalExpense: increment(-amount),
+              totalTransactions: increment(-1),
+              [`categoryTotals.${transaction.category}`]: increment(-amount),
+            },
+            { merge: true }
+          );
+        } else if (transaction.type === 'Income') {
+          if (destAccount)
+            batch.update(doc(accountsRef, destAccount.id), {
+              balance: increment(-amount),
+            });
+          batch.set(
+            monthlyAnalyticsRef,
+            {
+              totalIncome: increment(-amount),
+              totalTransactions: increment(-1),
+            },
+            { merge: true }
+          );
+          batch.set(
+            dailyAnalyticsRef,
+            {
+              totalIncome: increment(-amount),
+              totalTransactions: increment(-1),
+            },
+            { merge: true }
+          );
+        } else if (transaction.type === 'Transfer') {
+          if (sourceAccount)
+            batch.update(doc(accountsRef, sourceAccount.id), {
+              balance: increment(amount),
+            });
+          if (destAccount)
+            batch.update(doc(accountsRef, destAccount.id), {
+              balance: increment(-amount),
+            });
+          // Transfers may not affect analytics
+        }
+      }
+    }
+    await batch.commit();
   };
 
   const handleSaveAdjustment = async (accountName, difference) => {
     if (!user) return;
+    const accountDoc = accounts.find((a) => a.name === accountName);
+    if (!accountDoc) return;
     const adjTx = {
       type: difference > 0 ? 'Income' : 'Expense',
       amount: Math.abs(difference),
@@ -251,12 +582,9 @@ function App() {
       date: new Date(),
       involvedAccounts: [accountName],
     };
-    try {
-      await addDoc(collection(db, 'users', user.uid, 'transactions'), adjTx);
-      handleBack();
-    } catch (error) {
-      console.error('Error saving adjustment:', error);
-    }
+
+    await handleSaveTransaction(adjTx);
+    handleBack();
   };
 
   if (loading) {
@@ -336,7 +664,11 @@ function App() {
           <Route
             path="/analytics"
             element={
-              <AnalyticsPage transactions={transactions} onBack={handleBack} />
+              <AnalyticsPage
+                user={user}
+                transactions={transactions}
+                onBack={handleBack}
+              />
             }
           />
           <Route
@@ -437,7 +769,7 @@ function App() {
                 onBack={handleBack}
                 onSave={handleSaveAdjustment}
                 accounts={accounts}
-                currentBalances={currentBalances}
+                // currentBalances={currentBalances}
                 openSelectionSheet={openSelectionSheet}
               />
             }
