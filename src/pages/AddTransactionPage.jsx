@@ -36,9 +36,10 @@ export const AddTransactionPage = ({
       setSource(initialData.source || '');
       setDestination(initialData.destination || '');
       setNotes(initialData.notes || '');
-      const d = initialData.date?.toDate
-        ? initialData.date.toDate()
-        : new Date();
+      const d =
+        initialData.date && initialData.date.seconds
+          ? new Date(initialData.date.seconds * 1000)
+          : new Date();
       setDate(d.toLocaleDateString('en-CA')); // yyyy-mm-dd format
       setTime(d.toTimeString().slice(0, 5));
       setIsSplit(initialData.splitAmount > 0);
