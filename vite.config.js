@@ -13,7 +13,8 @@ export default defineConfig({
         name: 'Expense Tracker',
         short_name: 'Expense Tracker',
         description: 'A simple expense tracker app.',
-        start_url: '.',
+        start_url: '/',
+        scope: '/',
         display: 'standalone',
         theme_color: '#ffffff',
         background_color: '#ffffff',
@@ -26,6 +27,11 @@ export default defineConfig({
           {
             src: 'assets/web-app-manifest-512x512.png',
             sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'assets/apple-touch-icon.png',
+            sizes: '180x180',
             type: 'image/png'
           }
         ]
