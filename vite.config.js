@@ -9,6 +9,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'assets/*.svg'],
+      manifestFilename: 'manifest.webmanifest',
       manifest: {
         name: 'Expense Tracker',
         short_name: 'Expense Tracker',
