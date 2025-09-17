@@ -5,6 +5,7 @@ import './index.css';
 import App from './App.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { BrowserRouter } from 'react-router-dom';
+import './swRegistration';
 
 // Initialize Sentry for logs.
 Sentry.init({
