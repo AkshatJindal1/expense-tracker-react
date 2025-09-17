@@ -338,7 +338,7 @@ export const HomePage = ({
             onClick={() => onNavigate('transactions')}
             className="text-sm font-medium text-blue-600 dark:text-blue-400"
           >
-            See All
+            See All123
           </button>
         </div>
         <div className="space-y-3">
