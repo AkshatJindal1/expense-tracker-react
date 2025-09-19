@@ -287,8 +287,9 @@ function App() {
             oldMonthlyRef,
             {
               totalExpense: increment(-oldAmount),
-              [`expenseCategoryTotals.${before.category}`]:
-                increment(-oldAmount),
+              expenseCategoryTotals: {
+                [before.category]: increment(-oldAmount),
+              },
             },
             { merge: true }
           );
@@ -296,8 +297,9 @@ function App() {
             oldDailyRef,
             {
               totalExpense: increment(-oldAmount),
-              [`expenseCategoryTotals.${before.category}`]:
-                increment(-oldAmount),
+              expenseCategoryTotals: {
+                [before.category]: increment(-oldAmount),
+              },
             },
             { merge: true }
           );
@@ -310,8 +312,9 @@ function App() {
             oldMonthlyRef,
             {
               totalIncome: increment(-oldAmount),
-              [`incomeCategoryTotals.${before.category}`]:
-                increment(-oldAmount),
+              incomeCategoryTotals: {
+                [before.category]: increment(-oldAmount),
+              },
             },
             { merge: true }
           );
@@ -319,8 +322,9 @@ function App() {
             oldDailyRef,
             {
               totalIncome: increment(-oldAmount),
-              [`incomeCategoryTotals.${before.category}`]:
-                increment(-oldAmount),
+              incomeCategoryTotals: {
+                [before.category]: increment(-oldAmount),
+              },
             },
             { merge: true }
           );
@@ -336,16 +340,18 @@ function App() {
           firestoreTransaction.set(
             oldMonthlyRef,
             {
-              [`transferCategoryTotals.${before.category}`]:
-                increment(-oldAmount),
+              transferCategoryTotals: {
+                [before.category]: increment(-oldAmount),
+              },
             },
             { merge: true }
           );
           firestoreTransaction.set(
             oldDailyRef,
             {
-              [`transferCategoryTotals.${before.category}`]:
-                increment(-oldAmount),
+              transferCategoryTotals: {
+                [before.category]: increment(-oldAmount),
+              },
             },
             { merge: true }
           );
@@ -378,8 +384,9 @@ function App() {
             monthlyAnalyticsRef,
             {
               totalExpense: increment(amount),
-              [`expenseCategoryTotals.${finalData.category}`]:
-                increment(amount),
+              expenseCategoryTotals: {
+                [finalData.category]: increment(amount),
+              },
             },
             { merge: true }
           );
@@ -387,8 +394,9 @@ function App() {
             dailyAnalyticsRef,
             {
               totalExpense: increment(amount),
-              [`expenseCategoryTotals.${finalData.category}`]:
-                increment(amount),
+              expenseCategoryTotals: {
+                [finalData.category]: increment(amount),
+              },
             },
             { merge: true }
           );
@@ -401,7 +409,7 @@ function App() {
             monthlyAnalyticsRef,
             {
               totalIncome: increment(amount),
-              [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+              incomeCategoryTotals: { [finalData.category]: increment(amount) },
             },
             { merge: true }
           );
@@ -409,7 +417,7 @@ function App() {
             dailyAnalyticsRef,
             {
               totalIncome: increment(amount),
-              [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+              incomeCategoryTotals: { [finalData.category]: increment(amount) },
             },
             { merge: true }
           );
@@ -418,23 +426,25 @@ function App() {
             firestoreTransaction.update(doc(accountsRef, newSourceAccount.id), {
               balance: increment(-amount),
             });
-          firestoreTransaction.set(
-            monthlyAnalyticsRef,
-            {
-              [`transferCategoryTotals.${before.category}`]:
-                increment(oldAmount),
-            },
-            { merge: true }
-          );
           if (newDestAccount)
             firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
               balance: increment(amount),
             });
           firestoreTransaction.set(
+            monthlyAnalyticsRef,
+            {
+              transferCategoryTotals: {
+                [before.category]: increment(oldAmount),
+              },
+            },
+            { merge: true }
+          );
+          firestoreTransaction.set(
             dailyAnalyticsRef,
             {
-              [`transferCategoryTotals.${before.category}`]:
-                increment(oldAmount),
+              transferCategoryTotals: {
+                [before.category]: increment(oldAmount),
+              },
             },
             { merge: true }
           );
@@ -471,7 +481,7 @@ function App() {
           {
             totalExpense: increment(amount),
             numExpenseTransactions: increment(1),
-            [`expenseCategoryTotals.${finalData.category}`]: increment(amount),
+            expenseCategoryTotals: { [finalData.category]: increment(amount) },
           },
           { merge: true }
         );
@@ -480,7 +490,7 @@ function App() {
           {
             totalExpense: increment(amount),
             numExpenseTransactions: increment(1),
-            [`expenseCategoryTotals.${finalData.category}`]: increment(amount),
+            expenseCategoryTotals: { [finalData.category]: increment(amount) },
           },
           { merge: true }
         );
@@ -494,7 +504,7 @@ function App() {
           {
             totalIncome: increment(amount),
             numIncomeTransactions: increment(1),
-            [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+            incomeCategoryTotals: { [finalData.category]: increment(amount) },
           },
           { merge: true }
         );
@@ -503,7 +513,7 @@ function App() {
           {
             totalIncome: increment(amount),
             numIncomeTransactions: increment(1),
-            [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+            incomeCategoryTotals: { [finalData.category]: increment(amount) },
           },
           { merge: true }
         );
@@ -520,7 +530,7 @@ function App() {
           monthlyAnalyticsRef,
           {
             numTransferTransactions: increment(1),
-            [`transferCategoryTotals.${finalData.category}`]: increment(amount),
+            transferCategoryTotals: { [finalData.category]: increment(amount) },
           },
           { merge: true }
         );
@@ -528,7 +538,7 @@ function App() {
           dailyAnalyticsRef,
           {
             numTransferTransactions: increment(1),
-            [`transferCategoryTotals.${finalData.category}`]: increment(amount),
+            transferCategoryTotals: { [finalData.category]: increment(amount) },
           },
           { merge: true }
         );
@@ -589,8 +599,9 @@ function App() {
             {
               totalExpense: increment(-amount),
               numExpenseTransactions: increment(-1),
-              [`expenseCategoryTotals.${transaction.category}`]:
-                increment(-amount),
+              expenseCategoryTotals: {
+                [transaction.category]: increment(-amount),
+              },
             },
             { merge: true }
           );
@@ -599,8 +610,9 @@ function App() {
             {
               totalExpense: increment(-amount),
               numExpenseTransactions: increment(-1),
-              [`expenseCategoryTotals.${transaction.category}`]:
-                increment(-amount),
+              expenseCategoryTotals: {
+                [transaction.category]: increment(-amount),
+              },
             },
             { merge: true }
           );
@@ -614,8 +626,9 @@ function App() {
             {
               totalIncome: increment(-amount),
               numIncomeTransactions: increment(-1),
-              [`incomeCategoryTotals.${transaction.category}`]:
-                increment(-amount),
+              incomeCategoryTotals: {
+                [transaction.category]: increment(-amount),
+              },
             },
             { merge: true }
           );
@@ -624,8 +637,9 @@ function App() {
             {
               totalIncome: increment(-amount),
               numIncomeTransactions: increment(-1),
-              [`incomeCategoryTotals.${transaction.category}`]:
-                increment(-amount),
+              incomeCategoryTotals: {
+                [transaction.category]: increment(-amount),
+              },
             },
             { merge: true }
           );
@@ -642,8 +656,9 @@ function App() {
             monthlyAnalyticsRef,
             {
               numTransferTransactions: increment(-1),
-              [`transferCategoryTotals.${transaction.category}`]:
-                increment(-amount),
+              transferCategoryTotals: {
+                [transaction.category]: increment(-amount),
+              },
             },
             { merge: true }
           );
@@ -651,8 +666,9 @@ function App() {
             dailyAnalyticsRef,
             {
               numTransferTransactions: increment(-1),
-              [`transferCategoryTotals.${transaction.category}`]:
-                increment(-amount),
+              transferCategoryTotals: {
+                [transaction.category]: increment(-amount),
+              },
             },
             { merge: true }
           );
