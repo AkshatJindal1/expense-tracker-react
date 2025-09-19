@@ -120,7 +120,7 @@ export const HomePage = ({
 
   const recentTransactions = transactions
     .filter((tx) => !tx.category.includes('Adjustment'))
-    .slice(0, 3);
+    .slice(0, 5);
 
   const accountTypeIcons = {
     Bank: 'account_balance',
