@@ -287,7 +287,8 @@ function App() {
             oldMonthlyRef,
             {
               totalExpense: increment(-oldAmount),
-              [`categoryTotals.${before.category}`]: increment(-oldAmount),
+              [`expenseCategoryTotals.${before.category}`]:
+                increment(-oldAmount),
             },
             { merge: true }
           );
@@ -295,7 +296,8 @@ function App() {
             oldDailyRef,
             {
               totalExpense: increment(-oldAmount),
-              [`categoryTotals.${before.category}`]: increment(-oldAmount),
+              [`expenseCategoryTotals.${before.category}`]:
+                increment(-oldAmount),
             },
             { merge: true }
           );
@@ -306,12 +308,20 @@ function App() {
             });
           firestoreTransaction.set(
             oldMonthlyRef,
-            { totalIncome: increment(-oldAmount) },
+            {
+              totalIncome: increment(-oldAmount),
+              [`incomeCategoryTotals.${before.category}`]:
+                increment(-oldAmount),
+            },
             { merge: true }
           );
           firestoreTransaction.set(
             oldDailyRef,
-            { totalIncome: increment(-oldAmount) },
+            {
+              totalIncome: increment(-oldAmount),
+              [`incomeCategoryTotals.${before.category}`]:
+                increment(-oldAmount),
+            },
             { merge: true }
           );
         } else if (before.type === 'Transfer') {
@@ -323,6 +333,22 @@ function App() {
             firestoreTransaction.update(doc(accountsRef, oldDestAccount.id), {
               balance: increment(-oldAmount),
             });
+          firestoreTransaction.set(
+            oldMonthlyRef,
+            {
+              [`transferCategoryTotals.${before.category}`]:
+                increment(-oldAmount),
+            },
+            { merge: true }
+          );
+          firestoreTransaction.set(
+            oldDailyRef,
+            {
+              [`transferCategoryTotals.${before.category}`]:
+                increment(-oldAmount),
+            },
+            { merge: true }
+          );
           // Transfers may not affect analytics
         }
 
@@ -352,7 +378,8 @@ function App() {
             monthlyAnalyticsRef,
             {
               totalExpense: increment(amount),
-              [`categoryTotals.${finalData.category}`]: increment(amount),
+              [`expenseCategoryTotals.${finalData.category}`]:
+                increment(amount),
             },
             { merge: true }
           );
@@ -360,7 +387,8 @@ function App() {
             dailyAnalyticsRef,
             {
               totalExpense: increment(amount),
-              [`categoryTotals.${finalData.category}`]: increment(amount),
+              [`expenseCategoryTotals.${finalData.category}`]:
+                increment(amount),
             },
             { merge: true }
           );
@@ -371,12 +399,18 @@ function App() {
             });
           firestoreTransaction.set(
             monthlyAnalyticsRef,
-            { totalIncome: increment(amount) },
+            {
+              totalIncome: increment(amount),
+              [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+            },
             { merge: true }
           );
           firestoreTransaction.set(
             dailyAnalyticsRef,
-            { totalIncome: increment(amount) },
+            {
+              totalIncome: increment(amount),
+              [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+            },
             { merge: true }
           );
         } else if (finalData.type === 'Transfer') {
@@ -384,11 +418,26 @@ function App() {
             firestoreTransaction.update(doc(accountsRef, newSourceAccount.id), {
               balance: increment(-amount),
             });
+          firestoreTransaction.set(
+            monthlyAnalyticsRef,
+            {
+              [`transferCategoryTotals.${before.category}`]:
+                increment(oldAmount),
+            },
+            { merge: true }
+          );
           if (newDestAccount)
             firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
               balance: increment(amount),
             });
-          // Transfers may not affect analytics
+          firestoreTransaction.set(
+            dailyAnalyticsRef,
+            {
+              [`transferCategoryTotals.${before.category}`]:
+                increment(oldAmount),
+            },
+            { merge: true }
+          );
         }
 
         // 3. Update the transaction itself
@@ -421,8 +470,8 @@ function App() {
           monthlyAnalyticsRef,
           {
             totalExpense: increment(amount),
-            totalTransactions: increment(1),
-            [`categoryTotals.${finalData.category}`]: increment(amount),
+            numExpenseTransactions: increment(1),
+            [`expenseCategoryTotals.${finalData.category}`]: increment(amount),
           },
           { merge: true }
         );
@@ -430,8 +479,8 @@ function App() {
           dailyAnalyticsRef,
           {
             totalExpense: increment(amount),
-            totalTransactions: increment(1),
-            [`categoryTotals.${finalData.category}`]: increment(amount),
+            numExpenseTransactions: increment(1),
+            [`expenseCategoryTotals.${finalData.category}`]: increment(amount),
           },
           { merge: true }
         );
@@ -442,12 +491,20 @@ function App() {
           });
         batch.set(
           monthlyAnalyticsRef,
-          { totalIncome: increment(amount), totalTransactions: increment(1) },
+          {
+            totalIncome: increment(amount),
+            numIncomeTransactions: increment(1),
+            [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+          },
           { merge: true }
         );
         batch.set(
           dailyAnalyticsRef,
-          { totalIncome: increment(amount), totalTransactions: increment(1) },
+          {
+            totalIncome: increment(amount),
+            numIncomeTransactions: increment(1),
+            [`incomeCategoryTotals.${finalData.category}`]: increment(amount),
+          },
           { merge: true }
         );
       } else if (finalData.type === 'Transfer') {
@@ -459,7 +516,22 @@ function App() {
           batch.update(doc(accountsRef, destAccount.id), {
             balance: increment(amount),
           });
-        // Transfers may not affect analytics
+        batch.set(
+          monthlyAnalyticsRef,
+          {
+            numTransferTransactions: increment(1),
+            [`transferCategoryTotals.${finalData.category}`]: increment(amount),
+          },
+          { merge: true }
+        );
+        batch.set(
+          dailyAnalyticsRef,
+          {
+            numTransferTransactions: increment(1),
+            [`transferCategoryTotals.${finalData.category}`]: increment(amount),
+          },
+          { merge: true }
+        );
       }
 
       await batch.commit();
@@ -516,8 +588,9 @@ function App() {
             monthlyAnalyticsRef,
             {
               totalExpense: increment(-amount),
-              totalTransactions: increment(-1),
-              [`categoryTotals.${transaction.category}`]: increment(-amount),
+              numExpenseTransactions: increment(-1),
+              [`expenseCategoryTotals.${transaction.category}`]:
+                increment(-amount),
             },
             { merge: true }
           );
@@ -525,8 +598,9 @@ function App() {
             dailyAnalyticsRef,
             {
               totalExpense: increment(-amount),
-              totalTransactions: increment(-1),
-              [`categoryTotals.${transaction.category}`]: increment(-amount),
+              numExpenseTransactions: increment(-1),
+              [`expenseCategoryTotals.${transaction.category}`]:
+                increment(-amount),
             },
             { merge: true }
           );
@@ -539,7 +613,9 @@ function App() {
             monthlyAnalyticsRef,
             {
               totalIncome: increment(-amount),
-              totalTransactions: increment(-1),
+              numIncomeTransactions: increment(-1),
+              [`incomeCategoryTotals.${transaction.category}`]:
+                increment(-amount),
             },
             { merge: true }
           );
@@ -547,7 +623,9 @@ function App() {
             dailyAnalyticsRef,
             {
               totalIncome: increment(-amount),
-              totalTransactions: increment(-1),
+              numIncomeTransactions: increment(-1),
+              [`incomeCategoryTotals.${transaction.category}`]:
+                increment(-amount),
             },
             { merge: true }
           );
@@ -560,7 +638,24 @@ function App() {
             batch.update(doc(accountsRef, destAccount.id), {
               balance: increment(-amount),
             });
-          // Transfers may not affect analytics
+          batch.set(
+            monthlyAnalyticsRef,
+            {
+              numTransferTransactions: increment(-1),
+              [`transferCategoryTotals.${transaction.category}`]:
+                increment(-amount),
+            },
+            { merge: true }
+          );
+          batch.set(
+            dailyAnalyticsRef,
+            {
+              numTransferTransactions: increment(-1),
+              [`transferCategoryTotals.${transaction.category}`]:
+                increment(-amount),
+            },
+            { merge: true }
+          );
         }
       }
     }
