@@ -1,9 +1,18 @@
 import React from 'react';
 
-export const FormRow = ({ icon, label, value, placeholder, onClick }) => (
+export const FormRow = ({
+  icon,
+  label,
+  value,
+  placeholder,
+  onClick,
+  error,
+}) => (
   <div
     onClick={onClick}
-    className="form-row cursor-pointer bg-white dark:bg-slate-800 p-3 rounded-lg flex justify-between items-center"
+    className={`form-row cursor-pointer bg-white dark:bg-slate-800 p-3 rounded-lg flex justify-between items-center border-2 ${
+      error ? 'border-red-600 dark:border-red-400' : 'border-transparent'
+    }`}
   >
     <div className="flex items-center">
       <span className="material-symbols-outlined mr-3 text-gray-500 dark:text-gray-400">

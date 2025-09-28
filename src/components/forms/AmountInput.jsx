@@ -1,7 +1,11 @@
 import React from 'react';
 
-export const AmountInput = ({ value, onChange }) => (
-  <div className="floating-label-container bg-white dark:bg-slate-800 rounded-lg">
+export const AmountInput = ({ value, onChange, error }) => (
+  <div
+    className={`floating-label-container bg-white dark:bg-slate-800 rounded-lg border-2 ${
+      error ? 'border-red-600 dark:border-red-400' : 'border-transparent'
+    }`}
+  >
     <span className="icon-prefix font-medium text-lg text-gray-800 dark:text-gray-200">
       ₹
     </span>

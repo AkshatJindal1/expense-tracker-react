@@ -6,7 +6,6 @@ export const AddCategoryPage = ({
   onBack,
   onDelete,
   openSelectionSheet,
-  showError,
 }) => {
   const location = useLocation();
   const initialData = location.state?.initialData;
@@ -16,10 +15,20 @@ export const AddCategoryPage = ({
   const [transactionType, setTransactionType] = useState(
     initialData?.transactionType || ''
   );
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const newErrors = {};
+    if (!name) newErrors.name = 'Category name is required.';
+    if (!transactionType)
+      newErrors.transactionType = 'Transaction type is required.';
+    return newErrors;
+  };
 
   const handleSave = () => {
-    if (!name || !transactionType) {
-      showError('Please fill all fields.');
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     onSave({ id: initialData?.id, name, transactionType });
@@ -49,20 +58,38 @@ export const AddCategoryPage = ({
         <input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (errors.name) setErrors({ ...errors, name: '' });
+          }}
           placeholder="Category Name"
-          className="w-full bg-gray-100 dark:bg-slate-700 p-3 rounded-lg placeholder-gray-500 dark:placeholder-gray-400 text-gray-800 dark:text-gray-200 border border-transparent focus:border-blue-500 focus:ring-0 outline-none"
+          className={`w-full bg-gray-100 dark:bg-slate-700 p-3 rounded-lg placeholder-gray-500 dark:placeholder-gray-400 text-gray-800 dark:text-gray-200 border ${
+            errors.name
+              ? 'border-red-600 dark:border-red-400'
+              : 'border-transparent'
+          } focus:border-blue-500 focus:ring-0 outline-none`}
         />
+        {errors.name && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {errors.name}
+          </p>
+        )}
         <div
-          onClick={() =>
+          onClick={() => {
             openSelectionSheet(
               'Select Transaction Type',
               ['Expense', 'Income', 'Transfer'],
               transactionType,
               setTransactionType
-            )
-          }
-          className="form-row cursor-pointer bg-white dark:bg-slate-800 p-3 rounder-lg flex justify-between items-center"
+            );
+            if (errors.transactionType)
+              setErrors({ ...errors, transactionType: '' });
+          }}
+          className={`form-row cursor-pointer bg-white dark:bg-slate-800 p-3 rounder-lg flex justify-between items-center ${
+            errors.transactionType
+              ? 'border border-red-600 dark:border-red-400'
+              : ''
+          }`}
         >
           <div className="flex items-center">
             <span className="material-symbols-outlined mr-3 text-gray-500 dark:text-gray-400">
@@ -76,6 +103,11 @@ export const AddCategoryPage = ({
             {transactionType || 'Select Type'}
           </span>
         </div>
+        {errors.transactionType && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {errors.transactionType}
+          </p>
+        )}
       </div>
       <button
         onClick={handleSave}

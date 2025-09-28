@@ -12,7 +12,6 @@ export const AddTransactionPage = ({
   accounts,
   categories,
   openSelectionSheet,
-  showError,
 }) => {
   const location = useLocation();
   const initialData = location.state?.initialData;
@@ -28,6 +27,7 @@ export const AddTransactionPage = ({
   const [notes, setNotes] = useState('');
   const [isSplit, setIsSplit] = useState(false);
   const [splitAmount, setSplitAmount] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (initialData) {
@@ -62,6 +62,19 @@ export const AddTransactionPage = ({
     }
   }, [initialData]);
 
+  const validate = () => {
+    const newErrors = {};
+    if (!amount) newErrors.amount = 'Amount is required.';
+    if (!date) newErrors.date = 'Date is required.';
+    if (!time) newErrors.time = 'Time is required.';
+    if (!category) newErrors.category = 'Category is required.';
+    if (txType !== 'Income' && !source)
+      newErrors.source = 'Source account is required.';
+    if (txType !== 'Expense' && !destination)
+      newErrors.destination = 'Destination account is required.';
+    return newErrors;
+  };
+
   const handleTxTypeChange = (newType) => {
     if (newType === txType) return;
     setTxType(newType);
@@ -73,16 +86,9 @@ export const AddTransactionPage = ({
   };
 
   const handleSave = () => {
-    if (!amount || !date || !time) {
-      showError('Please fill in Amount, Date, and Time.');
-      return;
-    }
-    if (txType !== 'Income' && !source) {
-      showError('Please select a source account.');
-      return;
-    }
-    if (txType !== 'Expense' && !destination) {
-      showError('Please select a destination account.');
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -105,14 +111,20 @@ export const AddTransactionPage = ({
       .filter((c) => c.transactionType === txType)
       .map((c) => ({ value: c.name }))
       .sort((a, b) => a.value.localeCompare(b.value));
-    openSelectionSheet('Select Category', items, category, setCategory);
+    openSelectionSheet('Select Category', items, category, (value) => {
+      setCategory(value);
+      if (errors.category) setErrors({ ...errors, category: '' });
+    });
   };
 
-  const handleAccountSelect = (setter, currentValue) => {
+  const handleAccountSelect = (setter, currentValue, fieldName) => {
     const items = accounts
       .map((a) => ({ value: a.name, subtext: a.type }))
       .sort((a, b) => a.value.localeCompare(b.value));
-    openSelectionSheet('Select Account', items, currentValue, setter);
+    openSelectionSheet('Select Account', items, currentValue, (value) => {
+      setter(value);
+      if (errors[fieldName]) setErrors({ ...errors, [fieldName]: '' });
+    });
   };
 
   return (
@@ -153,7 +165,19 @@ export const AddTransactionPage = ({
       </div>
 
       <div className="space-y-4">
-        <AmountInput value={amount} onChange={setAmount} />
+        <AmountInput
+          value={amount}
+          onChange={(value) => {
+            setAmount(value);
+            if (errors.amount) setErrors({ ...errors, amount: '' });
+          }}
+          error={errors.amount}
+        />
+        {errors.amount && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {errors.amount}
+          </p>
+        )}
 
         <FormRow
           icon="category"
@@ -161,34 +185,78 @@ export const AddTransactionPage = ({
           value={category}
           placeholder="Select Category"
           onClick={handleCategorySelect}
+          error={errors.category}
         />
+        {errors.category && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {errors.category}
+          </p>
+        )}
 
         {txType !== 'Income' && (
-          <FormRow
-            icon="call_made"
-            label="Source"
-            value={source}
-            placeholder="Select Source"
-            onClick={() => handleAccountSelect(setSource, source)}
-          />
+          <>
+            <FormRow
+              icon="call_made"
+              label="Source"
+              value={source}
+              placeholder="Select Source"
+              onClick={() => handleAccountSelect(setSource, source, 'source')}
+              error={errors.source}
+            />
+            {errors.source && (
+              <p className="text-red-600 dark:text-red-400 text-sm">
+                {errors.source}
+              </p>
+            )}
+          </>
         )}
 
         {txType !== 'Expense' && (
-          <FormRow
-            icon="call_received"
-            label="Destination"
-            value={destination}
-            placeholder="Select Destination"
-            onClick={() => handleAccountSelect(setDestination, destination)}
-          />
+          <>
+            <FormRow
+              icon="call_received"
+              label="Destination"
+              value={destination}
+              placeholder="Select Destination"
+              onClick={() =>
+                handleAccountSelect(setDestination, destination, 'destination')
+              }
+              error={errors.destination}
+            />
+            {errors.destination && (
+              <p className="text-red-600 dark:text-red-400 text-sm">
+                {errors.destination}
+              </p>
+            )}
+          </>
         )}
 
         <DateTimeInputs
           date={date}
           time={time}
-          onDateChange={setDate}
-          onTimeChange={setTime}
+          onDateChange={(value) => {
+            setDate(value);
+            if (errors.date) setErrors({ ...errors, date: '' });
+          }}
+          onTimeChange={(value) => {
+            setTime(value);
+            if (errors.time) setErrors({ ...errors, time: '' });
+          }}
+          dateError={errors.date}
+          timeError={errors.time}
         />
+        <div className="grid grid-cols-2 gap-4">
+          {errors.date && (
+            <p className="text-red-600 dark:text-red-400 text-sm">
+              {errors.date}
+            </p>
+          )}
+          {errors.time && (
+            <p className="text-red-600 dark:text-red-400 text-sm">
+              {errors.time}
+            </p>
+          )}
+        </div>
 
         <div>
           <label className="text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 px-1">

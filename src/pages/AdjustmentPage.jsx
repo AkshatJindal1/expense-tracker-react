@@ -8,10 +8,19 @@ export const AdjustmentPage = ({
 }) => {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [actualBalance, setActualBalance] = useState('');
+  const [errors, setErrors] = useState({});
 
   const appBalance = selectedAccount ? selectedAccount.balance || 0 : 0;
   const difference =
     actualBalance !== '' ? parseFloat(actualBalance) - appBalance : 0;
+
+  const validate = () => {
+    const newErrors = {};
+    if (!selectedAccount) newErrors.account = 'Please select an account.';
+    if (actualBalance === '')
+      newErrors.actualBalance = 'Please enter the actual balance.';
+    return newErrors;
+  };
 
   const handleAccountSelect = () => {
     const items = accounts.map((a) => ({ value: a.name, subtext: a.type }));
@@ -23,12 +32,19 @@ export const AdjustmentPage = ({
         const account = accounts.find((a) => a.name === value);
         setSelectedAccount(account);
         setActualBalance(''); // Reset input when a new account is selected
+        if (errors.account) setErrors({ ...errors, account: '' });
       }
     );
   };
 
   const handleSave = () => {
-    if (!selectedAccount || difference === 0) return;
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    if (difference === 0) return;
     onSave(selectedAccount.name, difference);
   };
 
@@ -43,11 +59,18 @@ export const AdjustmentPage = ({
       <div className="space-y-4">
         <div
           onClick={handleAccountSelect}
-          className="selection-input bg-white dark:bg-slate-800 p-3 rounded-lg cursor-pointer flex justify-between items-center"
+          className={`selection-input bg-white dark:bg-slate-800 p-3 rounded-lg cursor-pointer flex justify-between items-center ${
+            errors.account ? 'border border-red-600 dark:border-red-400' : ''
+          }`}
         >
           <span>{selectedAccount?.name || 'Select Account to Adjust'}</span>
           <span className="material-symbols-outlined">expand_more</span>
         </div>
+        {errors.account && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {errors.account}
+          </p>
+        )}
 
         {selectedAccount && (
           <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm space-y-4">
@@ -73,17 +96,36 @@ export const AdjustmentPage = ({
                 type="number"
                 id="adj-actual-balance"
                 value={actualBalance}
-                onChange={(e) => setActualBalance(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-slate-700 border-gray-300 dark:border-gray-600 rounded-lg p-3 mt-1"
+                onChange={(e) => {
+                  setActualBalance(e.target.value);
+                  if (errors.actualBalance)
+                    setErrors({ ...errors, actualBalance: '' });
+                }}
+                className={`w-full bg-gray-50 dark:bg-slate-700 border-gray-300 dark:border-gray-600 rounded-lg p-3 mt-1 ${
+                  errors.actualBalance
+                    ? 'border border-red-600 dark:border-red-400'
+                    : ''
+                }`}
                 placeholder="Enter actual balance"
               />
+              {errors.actualBalance && (
+                <p className="text-red-600 dark:text-red-400 text-sm">
+                  {errors.actualBalance}
+                </p>
+              )}
             </div>
             <div>
               <label className="text-sm text-gray-500 dark:text-gray-400">
                 Difference
               </label>
               <p
-                className={`text-base font-medium ${difference > 0 ? 'text-green-600 dark:text-green-400' : difference < 0 ? 'text-red-600 dark:text-red-400' : ''}`}
+                className={`text-base font-medium ${
+                  difference > 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : difference < 0
+                      ? 'text-red-600 dark:text-red-400'
+                      : ''
+                }`}
               >
                 {difference.toLocaleString('en-IN', {
                   style: 'currency',

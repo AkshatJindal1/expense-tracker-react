@@ -6,7 +6,6 @@ export const AddAccountPage = ({
   onBack,
   onDelete,
   openSelectionSheet,
-  showError,
 }) => {
   const location = useLocation();
   const initialData = location.state?.initialData;
@@ -17,12 +16,22 @@ export const AddAccountPage = ({
   const [initialBalance, setInitialBalance] = useState(
     initialData?.balance || '0'
   );
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const newErrors = {};
+    if (!name) newErrors.name = 'Account name is required.';
+    if (!type) newErrors.type = 'Account type is required.';
+    return newErrors;
+  };
 
   const handleSave = () => {
-    if (!name || !type) {
-      showError('Please fill all fields.');
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
     const accountData = {
       id: initialData?.id,
       name,
@@ -60,20 +69,35 @@ export const AddAccountPage = ({
         <input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (errors.name) setErrors({ ...errors, name: '' });
+          }}
           placeholder="Account Name"
-          className="w-full bg-gray-100 dark:bg-slate-700 p-3 rounded-lg placeholder-gray-500 dark:placeholder-gray-400 text-gray-800 dark:text-gray-200 border border-transparent focus:border-blue-500 focus:ring-0 outline-none"
+          className={`w-full bg-gray-100 dark:bg-slate-700 p-3 rounded-lg placeholder-gray-500 dark:placeholder-gray-400 text-gray-800 dark:text-gray-200 border ${
+            errors.name
+              ? 'border-red-600 dark:border-red-400'
+              : 'border-transparent'
+          } focus:border-blue-500 focus:ring-0 outline-none`}
         />
+        {errors.name && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {errors.name}
+          </p>
+        )}
         <div
-          onClick={() =>
+          onClick={() => {
             openSelectionSheet(
               'Select Type',
               ['Bank', 'Credit Card', 'Wallet', 'Splitwise'],
               type,
               setType
-            )
-          }
-          className="form-row cursor-pointer bg-white dark:bg-slate-800 p-3 rounded-lg flex justify-between items-center"
+            );
+            if (errors.type) setErrors({ ...errors, type: '' });
+          }}
+          className={`form-row cursor-pointer bg-white dark:bg-slate-800 p-3 rounded-lg flex justify-between items-center ${
+            errors.type ? 'border border-red-600 dark:border-red-400' : ''
+          }`}
         >
           <div className="flex items-center">
             <span className="material-symbols-outlined mr-3 text-gray-500 dark:text-gray-400">
@@ -87,6 +111,11 @@ export const AddAccountPage = ({
             {type || 'Select Type'}
           </span>
         </div>
+        {errors.type && (
+          <p className="text-red-600 dark:text-red-400 text-sm">
+            {errors.type}
+          </p>
+        )}
         {!isEditing && (
           <div>
             <label className="text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 px-1">
