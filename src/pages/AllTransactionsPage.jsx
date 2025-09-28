@@ -21,6 +21,7 @@ export const AllTransactionsPage = ({
   onDelete,
   accounts,
   openSelectionSheet,
+  showError,
 }) => {
   const [transactions, setTransactions] = useState([]);
   const [lastVisible, setLastVisible] = useState(null);
@@ -104,13 +105,15 @@ export const AllTransactionsPage = ({
         }
       } catch (error) {
         console.error('Error fetching transactions:', error);
-        // Handle the error appropriately in your UI
+        showError(
+          'Failed to load transactions. Please try refreshing the page.'
+        );
       } finally {
         setLoading(false);
         setLoadingMore(false);
       }
     },
-    [buildQuery, lastVisible]
+    [buildQuery, lastVisible, showError]
   );
 
   useEffect(() => {

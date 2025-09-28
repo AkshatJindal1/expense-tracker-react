@@ -6,6 +6,7 @@ export const AddCategoryPage = ({
   onBack,
   onDelete,
   openSelectionSheet,
+  showError,
 }) => {
   const location = useLocation();
   const initialData = location.state?.initialData;
@@ -18,7 +19,7 @@ export const AddCategoryPage = ({
 
   const handleSave = () => {
     if (!name || !transactionType) {
-      console.error('Please fill all fields.');
+      showError('Please fill all fields.');
       return;
     }
     onSave({ id: initialData?.id, name, transactionType });

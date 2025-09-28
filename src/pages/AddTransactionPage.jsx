@@ -12,6 +12,7 @@ export const AddTransactionPage = ({
   accounts,
   categories,
   openSelectionSheet,
+  showError,
 }) => {
   const location = useLocation();
   const initialData = location.state?.initialData;
@@ -73,15 +74,15 @@ export const AddTransactionPage = ({
 
   const handleSave = () => {
     if (!amount || !date || !time) {
-      alert('Please fill in Amount, Date, and Time.');
+      showError('Please fill in Amount, Date, and Time.');
       return;
     }
     if (txType !== 'Income' && !source) {
-      alert('Please select a source account.');
+      showError('Please select a source account.');
       return;
     }
     if (txType !== 'Expense' && !destination) {
-      alert('Please select a destination account.');
+      showError('Please select a destination account.');
       return;
     }
 

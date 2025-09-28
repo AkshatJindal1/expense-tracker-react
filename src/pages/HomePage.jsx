@@ -16,6 +16,7 @@ export const HomePage = ({
   accounts,
   onNavigate,
   onEditTxn,
+  showError,
 }) => {
   const [expandedSummary, setExpandedSummary] = useState(null); // 'Income', 'Spending', or null
   const [expandedBalances, setExpandedBalances] = useState({}); // e.g., { 'Bank': true }
@@ -96,11 +97,12 @@ export const HomePage = ({
         });
       } catch (error) {
         console.error('Error fetching summaries:', error);
+        showError('Failed to load summaries. Please try refreshing the page.');
       }
     };
 
     fetchSummaries();
-  }, [user, transactions]);
+  }, [user, transactions, showError]);
 
   const accountBalances = useMemo(() => {
     if (!accounts || accounts.length === 0) return {};

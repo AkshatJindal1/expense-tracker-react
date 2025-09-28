@@ -342,6 +342,12 @@ input:checked+.m3-slider:before {
 }
 
 /* New styles for the error snackbar */
+#error-snackbar {
+  opacity: 0;
+  transform: translate(-50%, 100%);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 100;
+}
 #error-snackbar.visible {
     opacity: 1;
     transform: translate(-50%, 0);

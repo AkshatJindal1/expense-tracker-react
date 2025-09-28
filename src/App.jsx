@@ -39,6 +39,7 @@ import { AddAccountPage } from './pages/AddAccountPage.jsx';
 import { AddCategoryPage } from './pages/AddCategoryPage.jsx';
 import { ConfirmationModal } from './components/ConfirmationModal.jsx';
 import { Spinner } from './components/Spinner.jsx';
+import { ErrorSnackbar } from './components/ErrorSnackbar.jsx';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -53,6 +54,7 @@ function App() {
     isOpen: false,
   });
   const [confirmCallback, setConfirmCallback] = useState(null);
+  const [error, setError] = useState('');
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -103,6 +105,14 @@ function App() {
       catUnsub();
     };
   }, [user]);
+
+  const showError = (message) => {
+    setError(message);
+  };
+
+  const clearError = () => {
+    setError('');
+  };
 
   // --- Custom Back Navigation Logic ---
   const handleBack = () => {
@@ -177,38 +187,6 @@ function App() {
     );
     await Promise.all(promises);
   };
-
-  // const currentBalances = useMemo(() => {
-  //   if (!accounts || accounts.length === 0) return {};
-  //   const balances = accounts.reduce(
-  //     (acc, account) => ({ ...acc, [account.name]: 0 }),
-  //     {}
-  //   );
-  //   transactions.forEach((tx) => {
-  //     if (tx.type === 'Transfer') {
-  //       if (Object.hasOwn(balances, tx.source))
-  //         balances[tx.source] -= tx.amount;
-  //       if (Object.hasOwn(balances, tx.destination))
-  //         balances[tx.destination] += tx.amount;
-  //     } else if (tx.type === 'Income') {
-  //       if (Object.hasOwn(balances, tx.destination))
-  //         balances[tx.destination] += tx.amount;
-  //     } else if (tx.type === 'Expense') {
-  //       if (Object.hasOwn(balances, tx.source))
-  //         balances[tx.source] -= tx.amount;
-  //     }
-  //     if (tx.splitAmount > 0) {
-  //       const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
-  //       if (
-  //         splitwiseAccount &&
-  //         Object.hasOwn(balances, splitwiseAccount.name)
-  //       ) {
-  //         balances[splitwiseAccount.name] += tx.splitAmount;
-  //       }
-  //     }
-  //   });
-  //   return balances;
-  // }, [transactions, accounts]);
 
   const handleSignIn = () => {
     signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
@@ -724,6 +702,7 @@ function App() {
                 onEditTxn={(item) =>
                   navigate('/add-transaction', { state: { initialData: item } })
                 }
+                showError={showError}
               />
             }
           />
@@ -747,6 +726,7 @@ function App() {
                 accounts={accounts}
                 categories={categories}
                 openSelectionSheet={openSelectionSheet}
+                showError={showError}
               />
             }
           />
@@ -769,6 +749,7 @@ function App() {
                 }
                 accounts={accounts}
                 openSelectionSheet={openSelectionSheet}
+                showError={showError}
               />
             }
           />
@@ -779,12 +760,14 @@ function App() {
                 user={user}
                 transactions={transactions}
                 onBack={handleBack}
+                showError={showError}
               />
             }
           />
           <Route
             path="/more"
             element={<MorePage onSignOut={handleSignOut} />}
+            showError={showError}
           />
           <Route
             path="/accounts"
@@ -827,6 +810,7 @@ function App() {
                   })
                 }
                 openSelectionSheet={openSelectionSheet}
+                showError={showError}
               />
             }
           />
@@ -870,6 +854,7 @@ function App() {
                   })
                 }
                 openSelectionSheet={openSelectionSheet}
+                showError={showError}
               />
             }
           />
@@ -880,7 +865,6 @@ function App() {
                 onBack={handleBack}
                 onSave={handleSaveAdjustment}
                 accounts={accounts}
-                // currentBalances={currentBalances}
                 openSelectionSheet={openSelectionSheet}
               />
             }
@@ -896,6 +880,7 @@ function App() {
         onConfirm={handleConfirm}
         onCancel={handleCancelConfirm}
       />
+      <ErrorSnackbar message={error} onClear={clearError} />
     </div>
   );
 }

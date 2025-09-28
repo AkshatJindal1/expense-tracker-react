@@ -25,7 +25,7 @@ ChartJS.register(
   Legend
 );
 
-export const AnalyticsPage = ({ user, onBack }) => {
+export const AnalyticsPage = ({ user, onBack, showError }) => {
   const { resolvedTheme } = useTheme();
   const [monthlySummaries, setMonthlySummaries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,12 +84,13 @@ export const AnalyticsPage = ({ user, onBack }) => {
         setMonthlySummaries(summaries);
       } catch (error) {
         console.error('Error fetching analytics:', error);
+        showError('Failed to load analytics. Please try refreshing the page.');
       } finally {
         setLoading(false);
       }
     };
     fetchAnalytics();
-  }, [user]);
+  }, [user, showError]);
 
   const analyticsData = useMemo(() => {
     if (monthlySummaries.length === 0 || !selectedMonthData) {

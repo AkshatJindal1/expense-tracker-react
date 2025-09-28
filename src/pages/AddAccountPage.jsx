@@ -6,6 +6,7 @@ export const AddAccountPage = ({
   onBack,
   onDelete,
   openSelectionSheet,
+  showError,
 }) => {
   const location = useLocation();
   const initialData = location.state?.initialData;
@@ -19,7 +20,7 @@ export const AddAccountPage = ({
 
   const handleSave = () => {
     if (!name || !type) {
-      alert('Please fill all fields.');
+      showError('Please fill all fields.');
       return;
     }
     const accountData = {
@@ -87,13 +88,17 @@ export const AddAccountPage = ({
           </span>
         </div>
         {!isEditing && (
-          <input
-            type="number"
-            value={initialBalance}
-            onChange={(e) => setInitialBalance(e.target.value)}
-            placeholder="Initial Balance"
-            className="w-full bg-gray-100 dark:bg-slate-700 p-3 rounded-lg placeholder-gray-500 dark:placeholder-gray-400 text-gray-800 dark:text-gray-200 border border-transparent focus:border-blue-500 focus:ring-0 outline-none"
-          />
+          <div>
+            <label className="text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 px-1">
+              Inital Balance
+            </label>
+            <input
+              type="number"
+              value={initialBalance}
+              onChange={(e) => setInitialBalance(e.target.value)}
+              className="w-full bg-gray-100 dark:bg-slate-700 p-3 rounded-lg placeholder-gray-500 dark:placeholder-gray-400 text-gray-800 dark:text-gray-200 border border-transparent focus:border-blue-500 focus:ring-0 outline-none"
+            />
+          </div>
         )}
       </div>
       <button
