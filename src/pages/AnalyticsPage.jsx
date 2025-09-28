@@ -29,6 +29,13 @@ export const AnalyticsPage = ({ user, onBack }) => {
   const { resolvedTheme } = useTheme();
   const [monthlySummaries, setMonthlySummaries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMonthData, setSelectedMonthData] = useState(null);
+
+  useEffect(() => {
+    if (monthlySummaries.length > 0) {
+      setSelectedMonthData(monthlySummaries[monthlySummaries.length - 1]);
+    }
+  }, [monthlySummaries]);
 
   // Define chart colors based on the current theme
   const textColor =
@@ -85,7 +92,7 @@ export const AnalyticsPage = ({ user, onBack }) => {
   }, [user]);
 
   const analyticsData = useMemo(() => {
-    if (monthlySummaries.length === 0) {
+    if (monthlySummaries.length === 0 || !selectedMonthData) {
       return {
         avgDailySpend: 0,
         avgTxSpend: 0,
@@ -99,10 +106,9 @@ export const AnalyticsPage = ({ user, onBack }) => {
       };
     }
 
-    const latestMonth = monthlySummaries[monthlySummaries.length - 1] || {};
-    const totalMonthlySpend = latestMonth.totalExpense || 0;
-    const transactionCount = latestMonth.numExpenseTransactions || 0;
-    const expenseCategoryTotals = latestMonth.expenseCategoryTotals || {};
+    const totalMonthlySpend = selectedMonthData.totalExpense || 0;
+    const transactionCount = selectedMonthData.numExpenseTransactions || 0;
+    const expenseCategoryTotals = selectedMonthData.expenseCategoryTotals || {};
 
     const sortedCategories = Object.entries(expenseCategoryTotals).sort(
       (a, b) => b[1] - a[1]
@@ -124,7 +130,6 @@ export const AnalyticsPage = ({ user, onBack }) => {
     const doughnutLabels = sortedCategoriesWithoutAdjustment.map((c) => c[0]);
     const doughnutData = sortedCategoriesWithoutAdjustment.map((c) => c[1]);
 
-    // This is a rough estimation, for a more accurate daily average, you would fetch daily summaries.
     const avgDailySpend = totalMonthlySpend / new Date().getDate();
     const avgTxSpend =
       transactionCount > 0 ? totalMonthlySpend / transactionCount : 0;
@@ -150,7 +155,14 @@ export const AnalyticsPage = ({ user, onBack }) => {
         ],
       },
     };
-  }, [monthlySummaries, resolvedTheme]);
+  }, [monthlySummaries, resolvedTheme, selectedMonthData]);
+
+  const handleBarClick = (event, elements) => {
+    if (elements.length > 0) {
+      const clickedIndex = elements[0].index;
+      setSelectedMonthData(monthlySummaries[clickedIndex]);
+    }
+  };
 
   const barChartOptions = {
     responsive: true,
@@ -164,6 +176,7 @@ export const AnalyticsPage = ({ user, onBack }) => {
       },
       x: { ticks: { color: textColor }, grid: { display: false } },
     },
+    onClick: handleBarClick,
   };
 
   const doughnutOptions = {
@@ -230,73 +243,79 @@ export const AnalyticsPage = ({ user, onBack }) => {
         />
       </div>
 
-      {analyticsData.doughnutChartData.labels.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm mb-6">
-          <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
-            Spending for{' '}
-            {new Date().toLocaleString('default', { month: 'long' })}
-          </h2>
-          <div className="h-64 mb-4">
-            <Doughnut
-              data={analyticsData.doughnutChartData}
-              options={doughnutOptions}
-            />
-          </div>
-          {analyticsData.totalMonthlySpendWithoutAdjustment > 0 &&
-            analyticsData.doughnutChartData.labels.map((label, index) => (
-              <div
-                key={label}
-                className="flex items-center justify-between py-1"
-              >
-                <div className="flex items-center">
-                  <span
-                    className="w-4 h-4 rounded-full mr-3"
-                    style={{
-                      backgroundColor:
-                        analyticsData.doughnutChartData.datasets[0]
-                          .backgroundColor[
-                          index %
-                            analyticsData.doughnutChartData.datasets[0]
-                              .backgroundColor.length
-                        ],
-                    }}
-                  />
-                  <span>{label}</span>
+      {analyticsData.doughnutChartData.labels.length > 0 &&
+        selectedMonthData && (
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm mb-6">
+            <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
+              Spending for{' '}
+              {new Date(selectedMonthData.id + '-02').toLocaleString(
+                'default',
+                { month: 'long' }
+              )}
+            </h2>
+            <div className="h-64 mb-4">
+              <Doughnut
+                data={analyticsData.doughnutChartData}
+                options={doughnutOptions}
+              />
+            </div>
+            {analyticsData.totalMonthlySpendWithoutAdjustment > 0 &&
+              analyticsData.doughnutChartData.labels.map((label, index) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between py-1"
+                >
+                  <div className="flex items-center">
+                    <span
+                      className="w-4 h-4 rounded-full mr-3"
+                      style={{
+                        backgroundColor:
+                          analyticsData.doughnutChartData.datasets[0]
+                            .backgroundColor[
+                            index %
+                              analyticsData.doughnutChartData.datasets[0]
+                                .backgroundColor.length
+                          ],
+                      }}
+                    />
+                    <span>{label}</span>
+                  </div>
+                  <span>
+                    {(
+                      (analyticsData.doughnutChartData.datasets[0].data[index] /
+                        analyticsData.totalMonthlySpendWithoutAdjustment) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </span>
                 </div>
-                <span>
-                  {(
-                    (analyticsData.doughnutChartData.datasets[0].data[index] /
-                      analyticsData.totalMonthlySpendWithoutAdjustment) *
-                    100
-                  ).toFixed(1)}
-                  %
+              ))}
+          </div>
+        )}
+
+      {selectedMonthData && (
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
+          <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Spending by Category
+          </h2>
+          <div id="category-summary-list">
+            {analyticsData.sortedCategories.map(([name, total]) => (
+              <div
+                key={name}
+                className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-slate-700"
+              >
+                <span className="font-normal">{name}</span>
+                <span className="font-medium">
+                  {total.toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  })}
                 </span>
               </div>
             ))}
+          </div>
         </div>
       )}
-
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
-        <h2 className="text-base font-medium mb-3 text-gray-700 dark:text-gray-300">
-          This Month's Spending by Category
-        </h2>
-        <div id="category-summary-list">
-          {analyticsData.sortedCategories.map(([name, total]) => (
-            <div
-              key={name}
-              className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-slate-700"
-            >
-              <span className="font-normal">{name}</span>
-              <span className="font-medium">
-                {total.toLocaleString('en-IN', {
-                  style: 'currency',
-                  currency: 'INR',
-                })}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
