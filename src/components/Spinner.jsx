@@ -2,19 +2,15 @@ import React from 'react';
 
 export const Spinner = () => (
   <div className="spinner-overlay">
-    <svg
-      className="m3-spinner"
-      viewBox="0 0 66 66"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg className="m3-spinner" viewBox="0 0 50 50">
       <circle
-        className="m3-spinner-circle"
+        className="path"
         fill="none"
-        strokeWidth="6"
+        strokeWidth="5"
         strokeLinecap="round"
-        cx="33"
-        cy="33"
-        r="30"
+        cx="25"
+        cy="25"
+        r="20"
       ></circle>
     </svg>
   </div>

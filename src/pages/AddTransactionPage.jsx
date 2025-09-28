@@ -4,6 +4,7 @@ import { AmountInput } from '../components/forms/AmountInput';
 import { DateTimeInputs } from '../components/forms/DatetimeInput';
 import { FormRow } from '../components/forms/FormRow';
 import { SplitwiseInput } from '../components/forms/SplitwiseInput';
+import { ButtonSpinner } from '../components/ButtonSpinner.jsx';
 
 export const AddTransactionPage = ({
   onBack,
@@ -27,6 +28,7 @@ export const AddTransactionPage = ({
   const [notes, setNotes] = useState('');
   const [isSplit, setIsSplit] = useState(false);
   const [splitAmount, setSplitAmount] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -85,12 +87,14 @@ export const AddTransactionPage = ({
     setSplitAmount('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
+
+    setIsSaving(true);
 
     const transactionData = {
       id: initialData?.id,
@@ -103,7 +107,13 @@ export const AddTransactionPage = ({
       notes,
       splitAmount: isSplit ? parseFloat(splitAmount) || 0 : 0,
     };
-    onSave(transactionData);
+    try {
+      await onSave(transactionData);
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCategorySelect = () => {
@@ -286,9 +296,15 @@ export const AddTransactionPage = ({
 
       <button
         onClick={handleSave}
+        disabled={isSaving}
         className="fab save-fab bg-blue-600 dark:bg-blue-500 text-white"
       >
-        <span className="material-symbols-outlined">save</span>
+        {' '}
+        {isSaving ? (
+          <ButtonSpinner />
+        ) : (
+          <span className="material-symbols-outlined">save</span>
+        )}
       </button>
     </div>
   );

@@ -397,45 +397,49 @@ input:checked+.m3-slider:before {
 .m3-spinner {
     width: 48px;
     height: 48px;
-    animation: rotator 1.4s linear infinite;
+    animation: rotate 2s linear infinite;
 }
 
-@keyframes rotator {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(270deg);
-    }
-}
-
-.m3-spinner-circle {
-    stroke-dasharray: 187;
-    stroke-dashoffset: 0;
-    transform-origin: center;
-    animation: dash 1.4s ease-in-out infinite;
+.m3-spinner .path {
     /* Default (light mode) color */
     stroke: #0b57d0;
+    animation: dash 1.5s ease-in-out infinite;
+    
 }
-.dark .m3-spinner-circle {
+.dark .m3-spinner .path {
     stroke: #8AB4F8; /* A lighter blue for dark backgrounds */
 }
 
+.button-spinner {
+  width: 24px;
+  height: 24px;
+  animation: rotate 2s linear infinite;
+}
+
+.button-spinner .path {
+  stroke: #fff; /* White color for the spinner */
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes dash {
-    0% {
-        stroke-dashoffset: 187;
-    }
-
-    50% {
-        stroke-dasharray: 89, 200;
-        stroke-dashoffset: -35;
-    }
-
-    100% {
-        stroke-dasharray: 89, 200;
-        stroke-dashoffset: -124;
-    }
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
 }
 
 /* Spinner styles ends */

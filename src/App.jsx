@@ -222,130 +222,251 @@ function App() {
     );
     const dailyAnalyticsRef = doc(db, `analytics/${user.uid}/daily/${dayId}`);
 
-    if (id) {
-      // --- UPDATE ---
-      await runTransaction(db, async (firestoreTransaction) => {
-        const txDocRef = doc(transactionsRef, id);
-        const txDoc = await firestoreTransaction.get(txDocRef);
-        if (!txDoc.exists()) throw 'Transaction does not exist!';
+    try {
+      if (id) {
+        // --- UPDATE ---
+        await runTransaction(db, async (firestoreTransaction) => {
+          const txDocRef = doc(transactionsRef, id);
+          const txDoc = await firestoreTransaction.get(txDocRef);
+          if (!txDoc.exists()) throw 'Transaction does not exist!';
 
-        const before = txDoc.data();
-        const oldAmount = before.amount || 0;
-        const oldSplitAmount = before.splitAmount || 0;
-        const oldDate = before.date.toDate();
-        const oldMonthId = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}`;
-        const oldDayId = `${oldMonthId}-${String(oldDate.getDate()).padStart(2, '0')}`;
-        const oldMonthlyRef = doc(
-          db,
-          `analytics/${user.uid}/monthly/${oldMonthId}`
-        );
-        const oldDailyRef = doc(db, `analytics/${user.uid}/daily/${oldDayId}`);
-        const oldSourceAccount = accounts.find((a) => a.name === before.source);
-        const oldDestAccount = accounts.find(
-          (a) => a.name === before.destination
-        );
+          const before = txDoc.data();
+          const oldAmount = before.amount || 0;
+          const oldSplitAmount = before.splitAmount || 0;
+          const oldDate = before.date.toDate();
+          const oldMonthId = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}`;
+          const oldDayId = `${oldMonthId}-${String(oldDate.getDate()).padStart(2, '0')}`;
+          const oldMonthlyRef = doc(
+            db,
+            `analytics/${user.uid}/monthly/${oldMonthId}`
+          );
+          const oldDailyRef = doc(
+            db,
+            `analytics/${user.uid}/daily/${oldDayId}`
+          );
+          const oldSourceAccount = accounts.find(
+            (a) => a.name === before.source
+          );
+          const oldDestAccount = accounts.find(
+            (a) => a.name === before.destination
+          );
 
-        // 1. Revert old transaction
-        if (before.type === 'Expense') {
-          if (oldSourceAccount)
-            firestoreTransaction.update(doc(accountsRef, oldSourceAccount.id), {
-              balance: increment(oldAmount),
-            });
-          if (oldSplitAmount > 0) {
-            const splitwiseAccount = accounts.find(
-              (a) => a.type === 'Splitwise'
-            );
-            if (splitwiseAccount)
+          // 1. Revert old transaction
+          if (before.type === 'Expense') {
+            if (oldSourceAccount)
               firestoreTransaction.update(
-                doc(accountsRef, splitwiseAccount.id),
-                { balance: increment(-oldSplitAmount) }
+                doc(accountsRef, oldSourceAccount.id),
+                {
+                  balance: increment(oldAmount),
+                }
               );
+            if (oldSplitAmount > 0) {
+              const splitwiseAccount = accounts.find(
+                (a) => a.type === 'Splitwise'
+              );
+              if (splitwiseAccount)
+                firestoreTransaction.update(
+                  doc(accountsRef, splitwiseAccount.id),
+                  { balance: increment(-oldSplitAmount) }
+                );
+            }
+            firestoreTransaction.set(
+              oldMonthlyRef,
+              {
+                totalExpense: increment(-oldAmount),
+                expenseCategoryTotals: {
+                  [before.category]: increment(-oldAmount),
+                },
+              },
+              { merge: true }
+            );
+            firestoreTransaction.set(
+              oldDailyRef,
+              {
+                totalExpense: increment(-oldAmount),
+                expenseCategoryTotals: {
+                  [before.category]: increment(-oldAmount),
+                },
+              },
+              { merge: true }
+            );
+          } else if (before.type === 'Income') {
+            if (oldDestAccount)
+              firestoreTransaction.update(doc(accountsRef, oldDestAccount.id), {
+                balance: increment(-oldAmount),
+              });
+            firestoreTransaction.set(
+              oldMonthlyRef,
+              {
+                totalIncome: increment(-oldAmount),
+                incomeCategoryTotals: {
+                  [before.category]: increment(-oldAmount),
+                },
+              },
+              { merge: true }
+            );
+            firestoreTransaction.set(
+              oldDailyRef,
+              {
+                totalIncome: increment(-oldAmount),
+                incomeCategoryTotals: {
+                  [before.category]: increment(-oldAmount),
+                },
+              },
+              { merge: true }
+            );
+          } else if (before.type === 'Transfer') {
+            if (oldSourceAccount)
+              firestoreTransaction.update(
+                doc(accountsRef, oldSourceAccount.id),
+                {
+                  balance: increment(oldAmount),
+                }
+              );
+            if (oldDestAccount)
+              firestoreTransaction.update(doc(accountsRef, oldDestAccount.id), {
+                balance: increment(-oldAmount),
+              });
+            firestoreTransaction.set(
+              oldMonthlyRef,
+              {
+                transferCategoryTotals: {
+                  [before.category]: increment(-oldAmount),
+                },
+              },
+              { merge: true }
+            );
+            firestoreTransaction.set(
+              oldDailyRef,
+              {
+                transferCategoryTotals: {
+                  [before.category]: increment(-oldAmount),
+                },
+              },
+              { merge: true }
+            );
+            // Transfers may not affect analytics
           }
-          firestoreTransaction.set(
-            oldMonthlyRef,
-            {
-              totalExpense: increment(-oldAmount),
-              expenseCategoryTotals: {
-                [before.category]: increment(-oldAmount),
-              },
-            },
-            { merge: true }
-          );
-          firestoreTransaction.set(
-            oldDailyRef,
-            {
-              totalExpense: increment(-oldAmount),
-              expenseCategoryTotals: {
-                [before.category]: increment(-oldAmount),
-              },
-            },
-            { merge: true }
-          );
-        } else if (before.type === 'Income') {
-          if (oldDestAccount)
-            firestoreTransaction.update(doc(accountsRef, oldDestAccount.id), {
-              balance: increment(-oldAmount),
-            });
-          firestoreTransaction.set(
-            oldMonthlyRef,
-            {
-              totalIncome: increment(-oldAmount),
-              incomeCategoryTotals: {
-                [before.category]: increment(-oldAmount),
-              },
-            },
-            { merge: true }
-          );
-          firestoreTransaction.set(
-            oldDailyRef,
-            {
-              totalIncome: increment(-oldAmount),
-              incomeCategoryTotals: {
-                [before.category]: increment(-oldAmount),
-              },
-            },
-            { merge: true }
-          );
-        } else if (before.type === 'Transfer') {
-          if (oldSourceAccount)
-            firestoreTransaction.update(doc(accountsRef, oldSourceAccount.id), {
-              balance: increment(oldAmount),
-            });
-          if (oldDestAccount)
-            firestoreTransaction.update(doc(accountsRef, oldDestAccount.id), {
-              balance: increment(-oldAmount),
-            });
-          firestoreTransaction.set(
-            oldMonthlyRef,
-            {
-              transferCategoryTotals: {
-                [before.category]: increment(-oldAmount),
-              },
-            },
-            { merge: true }
-          );
-          firestoreTransaction.set(
-            oldDailyRef,
-            {
-              transferCategoryTotals: {
-                [before.category]: increment(-oldAmount),
-              },
-            },
-            { merge: true }
-          );
-          // Transfers may not affect analytics
-        }
 
-        // 2. Apply new transaction
-        const newSourceAccount = accounts.find(
-          (a) => a.name === finalData.source
-        );
-        const newDestAccount = accounts.find(
+          // 2. Apply new transaction
+          const newSourceAccount = accounts.find(
+            (a) => a.name === finalData.source
+          );
+          const newDestAccount = accounts.find(
+            (a) => a.name === finalData.destination
+          );
+          if (finalData.type === 'Expense') {
+            if (newSourceAccount)
+              firestoreTransaction.update(
+                doc(accountsRef, newSourceAccount.id),
+                {
+                  balance: increment(-amount),
+                }
+              );
+            if (splitAmount > 0) {
+              const splitwiseAccount = accounts.find(
+                (a) => a.type === 'Splitwise'
+              );
+              if (splitwiseAccount)
+                firestoreTransaction.update(
+                  doc(accountsRef, splitwiseAccount.id),
+                  { balance: increment(splitAmount) }
+                );
+            }
+            firestoreTransaction.set(
+              monthlyAnalyticsRef,
+              {
+                totalExpense: increment(amount),
+                expenseCategoryTotals: {
+                  [finalData.category]: increment(amount),
+                },
+              },
+              { merge: true }
+            );
+            firestoreTransaction.set(
+              dailyAnalyticsRef,
+              {
+                totalExpense: increment(amount),
+                expenseCategoryTotals: {
+                  [finalData.category]: increment(amount),
+                },
+              },
+              { merge: true }
+            );
+          } else if (finalData.type === 'Income') {
+            if (newDestAccount)
+              firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
+                balance: increment(amount),
+              });
+            firestoreTransaction.set(
+              monthlyAnalyticsRef,
+              {
+                totalIncome: increment(amount),
+                incomeCategoryTotals: {
+                  [finalData.category]: increment(amount),
+                },
+              },
+              { merge: true }
+            );
+            firestoreTransaction.set(
+              dailyAnalyticsRef,
+              {
+                totalIncome: increment(amount),
+                incomeCategoryTotals: {
+                  [finalData.category]: increment(amount),
+                },
+              },
+              { merge: true }
+            );
+          } else if (finalData.type === 'Transfer') {
+            if (newSourceAccount)
+              firestoreTransaction.update(
+                doc(accountsRef, newSourceAccount.id),
+                {
+                  balance: increment(-amount),
+                }
+              );
+            if (newDestAccount)
+              firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
+                balance: increment(amount),
+              });
+            firestoreTransaction.set(
+              monthlyAnalyticsRef,
+              {
+                transferCategoryTotals: {
+                  [before.category]: increment(oldAmount),
+                },
+              },
+              { merge: true }
+            );
+            firestoreTransaction.set(
+              dailyAnalyticsRef,
+              {
+                transferCategoryTotals: {
+                  [before.category]: increment(oldAmount),
+                },
+              },
+              { merge: true }
+            );
+          }
+
+          // 3. Update the transaction itself
+          firestoreTransaction.update(txDocRef, finalData);
+        });
+        handleBack();
+      } else {
+        // --- CREATE ---
+        const batch = writeBatch(db);
+        batch.set(doc(transactionsRef), finalData);
+
+        const sourceAccount = accounts.find((a) => a.name === finalData.source);
+        const destAccount = accounts.find(
           (a) => a.name === finalData.destination
         );
+
         if (finalData.type === 'Expense') {
-          if (newSourceAccount)
-            firestoreTransaction.update(doc(accountsRef, newSourceAccount.id), {
+          if (sourceAccount)
+            batch.update(doc(accountsRef, sourceAccount.id), {
               balance: increment(-amount),
             });
           if (splitAmount > 0) {
@@ -353,25 +474,26 @@ function App() {
               (a) => a.type === 'Splitwise'
             );
             if (splitwiseAccount)
-              firestoreTransaction.update(
-                doc(accountsRef, splitwiseAccount.id),
-                { balance: increment(splitAmount) }
-              );
+              batch.update(doc(accountsRef, splitwiseAccount.id), {
+                balance: increment(splitAmount),
+              });
           }
-          firestoreTransaction.set(
+          batch.set(
             monthlyAnalyticsRef,
             {
               totalExpense: increment(amount),
+              numExpenseTransactions: increment(1),
               expenseCategoryTotals: {
                 [finalData.category]: increment(amount),
               },
             },
             { merge: true }
           );
-          firestoreTransaction.set(
+          batch.set(
             dailyAnalyticsRef,
             {
               totalExpense: increment(amount),
+              numExpenseTransactions: increment(1),
               expenseCategoryTotals: {
                 [finalData.category]: increment(amount),
               },
@@ -379,151 +501,66 @@ function App() {
             { merge: true }
           );
         } else if (finalData.type === 'Income') {
-          if (newDestAccount)
-            firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
+          if (destAccount)
+            batch.update(doc(accountsRef, destAccount.id), {
               balance: increment(amount),
             });
-          firestoreTransaction.set(
+          batch.set(
             monthlyAnalyticsRef,
             {
               totalIncome: increment(amount),
+              numIncomeTransactions: increment(1),
               incomeCategoryTotals: { [finalData.category]: increment(amount) },
             },
             { merge: true }
           );
-          firestoreTransaction.set(
+          batch.set(
             dailyAnalyticsRef,
             {
               totalIncome: increment(amount),
+              numIncomeTransactions: increment(1),
               incomeCategoryTotals: { [finalData.category]: increment(amount) },
             },
             { merge: true }
           );
         } else if (finalData.type === 'Transfer') {
-          if (newSourceAccount)
-            firestoreTransaction.update(doc(accountsRef, newSourceAccount.id), {
+          if (sourceAccount)
+            batch.update(doc(accountsRef, sourceAccount.id), {
               balance: increment(-amount),
             });
-          if (newDestAccount)
-            firestoreTransaction.update(doc(accountsRef, newDestAccount.id), {
+          if (destAccount)
+            batch.update(doc(accountsRef, destAccount.id), {
               balance: increment(amount),
             });
-          firestoreTransaction.set(
+          batch.set(
             monthlyAnalyticsRef,
             {
+              numTransferTransactions: increment(1),
               transferCategoryTotals: {
-                [before.category]: increment(oldAmount),
+                [finalData.category]: increment(amount),
               },
             },
             { merge: true }
           );
-          firestoreTransaction.set(
+          batch.set(
             dailyAnalyticsRef,
             {
+              numTransferTransactions: increment(1),
               transferCategoryTotals: {
-                [before.category]: increment(oldAmount),
+                [finalData.category]: increment(amount),
               },
             },
             { merge: true }
           );
         }
 
-        // 3. Update the transaction itself
-        firestoreTransaction.update(txDocRef, finalData);
-      });
-      handleBack();
-    } else {
-      // --- CREATE ---
-      const batch = writeBatch(db);
-      batch.set(doc(transactionsRef), finalData);
-
-      const sourceAccount = accounts.find((a) => a.name === finalData.source);
-      const destAccount = accounts.find(
-        (a) => a.name === finalData.destination
-      );
-
-      if (finalData.type === 'Expense') {
-        if (sourceAccount)
-          batch.update(doc(accountsRef, sourceAccount.id), {
-            balance: increment(-amount),
-          });
-        if (splitAmount > 0) {
-          const splitwiseAccount = accounts.find((a) => a.type === 'Splitwise');
-          if (splitwiseAccount)
-            batch.update(doc(accountsRef, splitwiseAccount.id), {
-              balance: increment(splitAmount),
-            });
-        }
-        batch.set(
-          monthlyAnalyticsRef,
-          {
-            totalExpense: increment(amount),
-            numExpenseTransactions: increment(1),
-            expenseCategoryTotals: { [finalData.category]: increment(amount) },
-          },
-          { merge: true }
-        );
-        batch.set(
-          dailyAnalyticsRef,
-          {
-            totalExpense: increment(amount),
-            numExpenseTransactions: increment(1),
-            expenseCategoryTotals: { [finalData.category]: increment(amount) },
-          },
-          { merge: true }
-        );
-      } else if (finalData.type === 'Income') {
-        if (destAccount)
-          batch.update(doc(accountsRef, destAccount.id), {
-            balance: increment(amount),
-          });
-        batch.set(
-          monthlyAnalyticsRef,
-          {
-            totalIncome: increment(amount),
-            numIncomeTransactions: increment(1),
-            incomeCategoryTotals: { [finalData.category]: increment(amount) },
-          },
-          { merge: true }
-        );
-        batch.set(
-          dailyAnalyticsRef,
-          {
-            totalIncome: increment(amount),
-            numIncomeTransactions: increment(1),
-            incomeCategoryTotals: { [finalData.category]: increment(amount) },
-          },
-          { merge: true }
-        );
-      } else if (finalData.type === 'Transfer') {
-        if (sourceAccount)
-          batch.update(doc(accountsRef, sourceAccount.id), {
-            balance: increment(-amount),
-          });
-        if (destAccount)
-          batch.update(doc(accountsRef, destAccount.id), {
-            balance: increment(amount),
-          });
-        batch.set(
-          monthlyAnalyticsRef,
-          {
-            numTransferTransactions: increment(1),
-            transferCategoryTotals: { [finalData.category]: increment(amount) },
-          },
-          { merge: true }
-        );
-        batch.set(
-          dailyAnalyticsRef,
-          {
-            numTransferTransactions: increment(1),
-            transferCategoryTotals: { [finalData.category]: increment(amount) },
-          },
-          { merge: true }
-        );
+        await batch.commit();
+        navigate('/transactions');
       }
-
-      await batch.commit();
-      navigate('/transactions');
+    } catch (error) {
+      console.error('Transaction save failed: ', error);
+      showError('Failed to save transaction. Please try again.');
+      throw error;
     }
   };
 
