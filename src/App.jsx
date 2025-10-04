@@ -200,6 +200,8 @@ function App() {
     const { id, ...data } = transactionData;
     const amount = data.amount || 0;
     const splitAmount = data.splitAmount || 0;
+    const expenseAmount =
+      data.type === 'Expense' ? amount - splitAmount : amount;
     const date = data.date; //.toDate();
     const monthId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     const dayId = `${monthId}-${String(date.getDate()).padStart(2, '0')}`;
@@ -233,6 +235,8 @@ function App() {
           const before = txDoc.data();
           const oldAmount = before.amount || 0;
           const oldSplitAmount = before.splitAmount || 0;
+          const oldExpenseAmount =
+            before.type === 'Expense' ? oldAmount - oldSplitAmount : oldAmount;
           const oldDate = before.date.toDate();
           const oldMonthId = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}`;
           const oldDayId = `${oldMonthId}-${String(oldDate.getDate()).padStart(2, '0')}`;
@@ -273,9 +277,9 @@ function App() {
             firestoreTransaction.set(
               oldMonthlyRef,
               {
-                totalExpense: increment(-oldAmount),
+                totalExpense: increment(-oldExpenseAmount),
                 expenseCategoryTotals: {
-                  [before.category]: increment(-oldAmount),
+                  [before.category]: increment(-oldExpenseAmount),
                 },
               },
               { merge: true }
@@ -283,9 +287,9 @@ function App() {
             firestoreTransaction.set(
               oldDailyRef,
               {
-                totalExpense: increment(-oldAmount),
+                totalExpense: increment(-oldExpenseAmount),
                 expenseCategoryTotals: {
-                  [before.category]: increment(-oldAmount),
+                  [before.category]: increment(-oldExpenseAmount),
                 },
               },
               { merge: true }
@@ -376,9 +380,9 @@ function App() {
             firestoreTransaction.set(
               monthlyAnalyticsRef,
               {
-                totalExpense: increment(amount),
+                totalExpense: increment(expenseAmount),
                 expenseCategoryTotals: {
-                  [finalData.category]: increment(amount),
+                  [finalData.category]: increment(expenseAmount),
                 },
               },
               { merge: true }
@@ -386,9 +390,9 @@ function App() {
             firestoreTransaction.set(
               dailyAnalyticsRef,
               {
-                totalExpense: increment(amount),
+                totalExpense: increment(expenseAmount),
                 expenseCategoryTotals: {
-                  [finalData.category]: increment(amount),
+                  [finalData.category]: increment(expenseAmount),
                 },
               },
               { merge: true }
@@ -481,10 +485,10 @@ function App() {
           batch.set(
             monthlyAnalyticsRef,
             {
-              totalExpense: increment(amount),
+              totalExpense: increment(expenseAmount),
               numExpenseTransactions: increment(1),
               expenseCategoryTotals: {
-                [finalData.category]: increment(amount),
+                [finalData.category]: increment(expenseAmount),
               },
             },
             { merge: true }
@@ -492,10 +496,10 @@ function App() {
           batch.set(
             dailyAnalyticsRef,
             {
-              totalExpense: increment(amount),
+              totalExpense: increment(expenseAmount),
               numExpenseTransactions: increment(1),
               expenseCategoryTotals: {
-                [finalData.category]: increment(amount),
+                [finalData.category]: increment(expenseAmount),
               },
             },
             { merge: true }
@@ -575,6 +579,8 @@ function App() {
         const transaction = txDoc.data();
         const amount = transaction.amount || 0;
         const splitAmount = transaction.splitAmount || 0;
+        const expenseAmount =
+          transaction.type === 'Expense' ? amount - splitAmount : amount;
         const date = transaction.date.toDate();
         const monthId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         const dayId = `${monthId}-${String(date.getDate()).padStart(2, '0')}`;
@@ -612,10 +618,10 @@ function App() {
           batch.set(
             monthlyAnalyticsRef,
             {
-              totalExpense: increment(-amount),
+              totalExpense: increment(-expenseAmount),
               numExpenseTransactions: increment(-1),
               expenseCategoryTotals: {
-                [transaction.category]: increment(-amount),
+                [transaction.category]: increment(-expenseAmount),
               },
             },
             { merge: true }
@@ -623,10 +629,10 @@ function App() {
           batch.set(
             dailyAnalyticsRef,
             {
-              totalExpense: increment(-amount),
+              totalExpense: increment(-expenseAmount),
               numExpenseTransactions: increment(-1),
               expenseCategoryTotals: {
-                [transaction.category]: increment(-amount),
+                [transaction.category]: increment(-expenseAmount),
               },
             },
             { merge: true }
